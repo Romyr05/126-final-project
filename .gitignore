@@ -43,3 +43,7 @@ next-env.d.ts
 
 #dataset
 *games.db
+
+
+#codex
+.codex
