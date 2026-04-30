@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+/frontend/node_modules
+/.venv
+/backend/.venv
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,13 +15,21 @@
 
 # testing
 /coverage
+/backend/.pytest_cache
+/backend/htmlcov
+.pytest_cache
+__pycache__
+*.py[cod]
 
 # next.js
 /.next/
+/frontend/.next/
 /out/
+/frontend/out/
 
 # production
 /build
+/frontend/build
 
 # misc
 .DS_Store
@@ -31,7 +42,10 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
+.env
 .env.local
+frontend/.env.local
+backend/.env
 
 # vercel
 .vercel
@@ -39,10 +53,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+frontend/next-env.d.ts
 
 
-#dataset
+# datasets
 *games.db
+data/raw/*.db
 
 
 #codex
