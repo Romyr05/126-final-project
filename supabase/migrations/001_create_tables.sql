@@ -11,10 +11,11 @@ create TABLE if not exists public.users (
 
 create TABLE if not exists public.games (
   game_id uuid primary key default gen_random_uuid(),   /* random uuid because each game contains diff id */
+  igdb_id bigint unique not null,
   title text not null,
   description text,
   release_year int,
-  external_rating numeric(4,2),
+  external_rating numeric(5,2),
   avg_user_rating numeric(4,2) default 0,
   cover_image text,
   created_at timestamptz default now(),
@@ -29,6 +30,8 @@ CREATE INDEX idx_games_release_year ON games (release_year);
 CREATE INDEX idx_games_avg_user_rating ON games (avg_user_rating);
 
 CREATE INDEX idx_games_external_rating ON games (external_rating);
+
+create unique index if not exists idx_games_igdb_id on public.games(igdb_id) where igdb_id is not null;
 
 
 
