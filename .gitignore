@@ -58,7 +58,7 @@ frontend/next-env.d.ts
 
 # datasets
 *games.db
-data/raw/*.db
+games_raw.json
 
 
 #codex
