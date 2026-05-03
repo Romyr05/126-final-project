@@ -1,10 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// This is a helper so that you will not run fetch over and over again
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:8000";
+  // You make the next public api url
+
+async function request<T>(path: string, init?: RequestInit): Promise<T>{
+  const response = await fetch(`${API_URL}${path}`,{
     ...init,
-    headers: {
-      "Content-Type": "application/json",
+    headers:{
+      "Content-type" : "application/json",
       ...init?.headers,
     },
   });
@@ -16,14 +19,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+//Requests all games
 export function getGames<T>() {
   return request<T>("/games");
 }
 
+//Requests by game id
 export function getGame<T>(gameId: string) {
   return request<T>(`/games/${gameId}`);
 }
 
+
+// Requests Recommendation
 export function getRecommendations<T>() {
   return request<T>("/recommendations");
 }
