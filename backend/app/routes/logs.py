@@ -1,0 +1,93 @@
+# in logs we can read, post ,delete
+
+from fastapi import APIRouter, HTTPException, Depends
+from uuid import UUID
+from app.utils.auth import get_current_user
+from app.database.supabase_client_backend import supabase
+from app.schemas.logSchema import LogCreate
+
+
+router = APIRouter(prefix ="/logs", tags = ["Logs"])
+
+
+#getting shit
+@router.get("")
+def get_user_log(user = Depends(get_current_user)):
+    user_id = user.id  
+    response = supabase.table("game_logs").select("*").eq("user_id", str(user_id)).execute()
+    return response.data
+
+@router.get("/{game_id}")
+def get_game_log(game_id: UUID, user = Depends(get_current_user)):
+    user_id = user.id
+    response = (
+        supabase.table("game_logs").select("*").
+        eq("user_id", str(user_id)).eq("game_id", str(game_id)).
+        single().execute()
+    )
+    return response.data
+
+@router.get("/status/{status}")
+def get_game_by_status(status: str, user = Depends(get_current_user)):
+    user_id = user.id
+    response = (
+        supabase.table("game_logs").select("*").
+        eq("user_id", str(user_id)).eq("status", status).execute()
+    )
+    return response.data
+
+
+# post
+@router.post("")
+def post_log_game(log: LogCreate, user = Depends(get_current_user)):
+    user_id = user.id
+    response = (
+        supabase.table("game_logs")
+        .insert({
+            "user_id": str(user_id),
+            "game_id": str(log.game_id),
+            "status": log.status,
+        })
+        .execute()
+    )
+    return response.data
+
+
+
+
+# update
+@router.patch("/{game_id}")
+def patch_log_game(game_id: UUID, log: LogCreate, user = Depends(get_current_user)):
+    user_id = user.id
+    response = (
+        supabase.table("game_logs")
+        .update({"status": log.status})
+        .eq("user_id", str(user_id))
+        .eq("game_id", str(game_id))
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Game log not found")
+
+    return response.data[0]  # this is one {} from the list
+
+
+
+
+# delete
+@router.delete("/{game_id}")
+def delete_log_game(game_id: UUID, user = Depends(get_current_user)):
+    user_id = user.id
+    response = (
+        supabase.table("game_logs")
+        .delete()
+        .eq("user_id", str(user_id))
+        .eq("game_id", str(game_id))
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Game log not found")
+
+    return {"message": "Game log deleted", "log": response.data[0]}

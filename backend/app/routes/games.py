@@ -52,7 +52,6 @@ def search_games(
         "games": response.data
     }
 
-
 @router.get("/slug/{slug}")
 def get_game_by_slug(slug: str):
     return _get_single_game("slug", slug)
