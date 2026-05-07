@@ -1,6 +1,6 @@
 // This is a helper so that you will not run fetch over and over again
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   // You make the next public api url
 
 async function request<T>(path: string, init?: RequestInit): Promise<T>{
