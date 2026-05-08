@@ -26,4 +26,7 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: .
+          SUPABASE_URL: "https://example.supabase.co"
+          SUPABASE_ANON_KEY: "fake-anon-key"
+          SUPABASE_SERVICE_ROLE_KEY: "fake-service-role-key"
         run: pytest
