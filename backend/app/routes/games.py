@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Annotated
-from app.database.supabase_client_backend import supabase
+from app.database.supabase_client_backend import supabase_public
 from uuid import UUID
 
 router = APIRouter(prefix="/games", tags=["Games"])  #tags = Documentation purposes lang
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/games", tags=["Games"])  #tags = Documentation purpo
 
 def _get_single_game(column: str, value):
     response = (
-        supabase
+        supabase_public
         .table("games")
         .select("*")
         .eq(column, value)
@@ -28,7 +28,7 @@ def get_games(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     response = (
-        supabase.table("games").select("*").range(offset, offset + limit - 1).execute()
+        supabase_public.table("games").select("*").range(offset, offset + limit - 1).execute()
         #from 0 to limit so if limit = 20 then 0 to 19 so 20
     )
     return {
@@ -40,10 +40,10 @@ def get_games(
 @router.get("/search")
 def search_games(
     q: Annotated[str, Query(..., min_length =1 )], #... -> required siya
-    limit: Annotated[int, Query(ge=1, le=100)] = 20
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     response = (
-        supabase.table("games").select("*").ilike("title", f"%{q}%").limit(limit).execute()
+        supabase_public.table("games").select("*").ilike("title", f"%{q}%").limit(limit).execute()
     )
 
     return {

@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
-from app.database.supabase_client_backend import supabase
+from app.database.supabase_client_backend import supabase_public
 from app.schemas.reviewSchema import ReviewCreate, ReviewUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import AuthContext, get_auth_context
 
 
 router = APIRouter(prefix = "/reviews", tags = ["Reviews"])
@@ -13,7 +13,7 @@ router = APIRouter(prefix = "/reviews", tags = ["Reviews"])
 @router.get("/game/{game_id}")
 def get_review_by_game(game_id: UUID):
     response = (
-        supabase.table("reviews")
+        supabase_public.table("reviews")
         .select("*")
         .eq("game_id", str(game_id))
         .order("date_updated", desc=True)
@@ -23,12 +23,10 @@ def get_review_by_game(game_id: UUID):
 
 
 @router.get("/me")
-def get_my_reviews(user = Depends(get_current_user)):
-    user_id = user.id
+def get_my_reviews(auth: AuthContext = Depends(get_auth_context)):
     response = (
-        supabase.table("reviews")
+        auth.supabase.table("reviews")
         .select("*")
-        .eq("user_id", str(user_id))
         .order("date_updated", desc=True)
         .execute()
     )
@@ -36,12 +34,10 @@ def get_my_reviews(user = Depends(get_current_user)):
 
 
 @router.get("/{game_id}")
-def get_my_review_for_game(game_id: UUID, user = Depends(get_current_user)):
-    user_id = user.id
+def get_my_review_for_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
     response = (
-        supabase.table("reviews")
+        auth.supabase.table("reviews")
         .select("*")
-        .eq("user_id", str(user_id))
         .eq("game_id", str(game_id))
         .limit(1)
         .execute()
@@ -54,13 +50,11 @@ def get_my_review_for_game(game_id: UUID, user = Depends(get_current_user)):
 
 # posting
 @router.post("")
-def post_review(review: ReviewCreate, user = Depends(get_current_user)):
-    user_id = user.id
+def post_review(review: ReviewCreate, auth: AuthContext = Depends(get_auth_context)):
     # check if existing game in that game 
     existing = (
-        supabase.table("reviews")
+        auth.supabase.table("reviews")
         .select("*")
-        .eq("user_id", str(user_id))
         .eq("game_id", str(review.game_id))
         .limit(1)
         .execute()
@@ -70,9 +64,9 @@ def post_review(review: ReviewCreate, user = Depends(get_current_user)):
         raise HTTPException(status_code=409, detail="Review already exists")
 
     response = (
-        supabase.table("reviews")
+        auth.supabase.table("reviews")
         .insert({
-            "user_id": str(user_id),
+            "user_id": str(auth.user.id),
             "game_id": str(review.game_id),
             "rating": review.rating,
             "review_text": review.review_text,
@@ -84,15 +78,17 @@ def post_review(review: ReviewCreate, user = Depends(get_current_user)):
 
 # updating
 @router.patch("/{game_id}")
-def patch_review(game_id: UUID, review: ReviewUpdate, user = Depends(get_current_user)):
-    user_id = user.id
+def patch_review(
+    game_id: UUID,
+    review: ReviewUpdate,
+    auth: AuthContext = Depends(get_auth_context),
+):
     response = (
-        supabase.table("reviews")
+        auth.supabase.table("reviews")
         .update({
             "rating": review.rating,
             "review_text": review.review_text,
         })
-        .eq("user_id", str(user_id))
         .eq("game_id", str(game_id))
         .execute()
     )
@@ -104,12 +100,10 @@ def patch_review(game_id: UUID, review: ReviewUpdate, user = Depends(get_current
 
 # Deleting
 @router.delete("/{game_id}")
-def delete_review(game_id: UUID, user = Depends(get_current_user)):
-    user_id = user.id
+def delete_review(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
     response = (
-        supabase.table("reviews")
+        auth.supabase.table("reviews")
         .delete()
-        .eq("user_id", str(user_id))
         .eq("game_id", str(game_id))
         .execute()
     )

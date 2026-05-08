@@ -2,17 +2,17 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
 
-from app.database.supabase_client_backend import supabase
+from app.database.supabase_client_backend import supabase_public
 from app.schemas.listSchema import ListCreate, ListItemCreate, ListUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import AuthContext, get_auth_context
 
 
 router = APIRouter(prefix="/lists", tags=["Lists"])
 
 
-def _get_list(list_id: UUID):
+def _get_list(client, list_id: UUID):
     response = (
-        supabase.table("lists")
+        client.table("lists")
         .select("*")
         .eq("list_id", str(list_id))
         .limit(1)
@@ -25,8 +25,8 @@ def _get_list(list_id: UUID):
     return response.data[0]
 
 
-def _get_owned_list(list_id: UUID, user_id: str):
-    list_data = _get_list(list_id)
+def _get_owned_list(client, list_id: UUID, user_id: str):
+    list_data = _get_list(client, list_id)
 
     if list_data["user_id"] != str(user_id):
         raise HTTPException(status_code=403, detail="You do not own this list")
@@ -34,8 +34,8 @@ def _get_owned_list(list_id: UUID, user_id: str):
     return list_data
 
 
-def _get_readable_list(list_id: UUID, user_id: str):
-    list_data = _get_list(list_id)
+def _get_readable_list(client, list_id: UUID, user_id: str):
+    list_data = _get_list(client, list_id)
 
     if not list_data["is_public"] and list_data["user_id"] != str(user_id):
         raise HTTPException(status_code=403, detail="This list is private")
@@ -44,12 +44,10 @@ def _get_readable_list(list_id: UUID, user_id: str):
 
 
 @router.get("")
-def get_my_lists(user=Depends(get_current_user)):
-    user_id = user.id
+def get_my_lists(auth: AuthContext = Depends(get_auth_context)):
     response = (
-        supabase.table("lists")
+        auth.supabase.table("lists")
         .select("*")
-        .eq("user_id", str(user_id))
         .order("updated_at", desc=True)
         .execute()
     )
@@ -59,7 +57,7 @@ def get_my_lists(user=Depends(get_current_user)):
 @router.get("/public")
 def get_public_lists():
     response = (
-        supabase.table("lists")
+        supabase_public.table("lists")
         .select("*")
         .eq("is_public", True)
         .order("updated_at", desc=True)
@@ -69,18 +67,16 @@ def get_public_lists():
 
 
 @router.get("/{list_id}")
-def get_list(list_id: UUID, user=Depends(get_current_user)):
-    user_id = user.id
-    return _get_readable_list(list_id, str(user_id))
+def get_list(list_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    return _get_readable_list(auth.supabase, list_id, str(auth.user.id))
 
 
 @router.get("/{list_id}/games")
-def get_list_games(list_id: UUID, user=Depends(get_current_user)):
-    user_id = user.id
-    _get_readable_list(list_id, str(user_id))
+def get_list_games(list_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    _get_readable_list(auth.supabase, list_id, str(auth.user.id))
 
     response = (
-        supabase.table("list_items")
+        auth.supabase.table("list_items")
         .select("*, games(*)")
         .eq("list_id", str(list_id))
         .order("added_at", desc=True)
@@ -90,12 +86,11 @@ def get_list_games(list_id: UUID, user=Depends(get_current_user)):
 
 
 @router.post("")
-def post_list(list_data: ListCreate, user=Depends(get_current_user)):
-    user_id = user.id
+def post_list(list_data: ListCreate, auth: AuthContext = Depends(get_auth_context)):
     response = (
-        supabase.table("lists")
+        auth.supabase.table("lists")
         .insert({
-            "user_id": str(user_id),
+            "user_id": str(auth.user.id),
             "list_name": list_data.list_name,
             "description": list_data.description,
             "is_public": list_data.is_public,
@@ -109,13 +104,12 @@ def post_list(list_data: ListCreate, user=Depends(get_current_user)):
 def post_list_game(
     list_id: UUID,
     list_item: ListItemCreate,
-    user=Depends(get_current_user),
+    auth: AuthContext = Depends(get_auth_context),
 ):
-    user_id = user.id
-    _get_owned_list(list_id, str(user_id))
+    _get_owned_list(auth.supabase, list_id, str(auth.user.id))
 
     existing = (
-        supabase.table("list_items")
+        auth.supabase.table("list_items")
         .select("*")
         .eq("list_id", str(list_id))
         .eq("game_id", str(list_item.game_id))
@@ -127,7 +121,7 @@ def post_list_game(
         return existing.data[0]
 
     response = (
-        supabase.table("list_items")
+        auth.supabase.table("list_items")
         .insert({
             "list_id": str(list_id),
             "game_id": str(list_item.game_id),
@@ -138,9 +132,12 @@ def post_list_game(
 
 
 @router.patch("/{list_id}")
-def patch_list(list_id: UUID, list_data: ListUpdate, user=Depends(get_current_user)):
-    user_id = user.id
-    _get_owned_list(list_id, str(user_id))
+def patch_list(
+    list_id: UUID,
+    list_data: ListUpdate,
+    auth: AuthContext = Depends(get_auth_context),
+):
+    _get_owned_list(auth.supabase, list_id, str(auth.user.id))
 
     update_data = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -156,22 +153,24 @@ def patch_list(list_id: UUID, list_data: ListUpdate, user=Depends(get_current_us
         update_data["is_public"] = list_data.is_public
 
     response = (
-        supabase.table("lists")
+        auth.supabase.table("lists")
         .update(update_data)
         .eq("list_id", str(list_id))
-        .eq("user_id", str(user_id))
         .execute()
     )
     return response.data[0]
 
 
 @router.delete("/{list_id}/games/{game_id}")
-def delete_list_game(list_id: UUID, game_id: UUID, user=Depends(get_current_user)):
-    user_id = user.id
-    _get_owned_list(list_id, str(user_id))
+def delete_list_game(
+    list_id: UUID,
+    game_id: UUID,
+    auth: AuthContext = Depends(get_auth_context),
+):
+    _get_owned_list(auth.supabase, list_id, str(auth.user.id))
 
     response = (
-        supabase.table("list_items")
+        auth.supabase.table("list_items")
         .delete()
         .eq("list_id", str(list_id))
         .eq("game_id", str(game_id))
@@ -185,13 +184,11 @@ def delete_list_game(list_id: UUID, game_id: UUID, user=Depends(get_current_user
 
 
 @router.delete("/{list_id}")
-def delete_list(list_id: UUID, user=Depends(get_current_user)):
-    user_id = user.id
+def delete_list(list_id: UUID, auth: AuthContext = Depends(get_auth_context)):
     response = (
-        supabase.table("lists")
+        auth.supabase.table("lists")
         .delete()
         .eq("list_id", str(list_id))
-        .eq("user_id", str(user_id))
         .execute()
     )
 
