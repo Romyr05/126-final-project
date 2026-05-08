@@ -10,5 +10,5 @@ class ReviewCreate(BaseModel):
 
 
 class ReviewUpdate(BaseModel):
-    rating: int = Field(..., ge=1, le=5)
-    review_text: str | None
+    rating: int = Field(..., ge=1, le=5) #... to require it to have a rating
+    review_text: str | None = None # default none

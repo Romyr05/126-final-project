@@ -29,7 +29,7 @@ def get_game_log(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
     response = (
         auth.supabase.table("game_logs").select("*").
         eq("game_id", str(game_id)).
-        single().execute()
+        limit(1).execute()
     )
     return response.data
 
@@ -39,14 +39,14 @@ def get_game_log(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
 def post_log_game(log: LogCreate, auth: AuthContext = Depends(get_auth_context)):
     response = (
         auth.supabase.table("game_logs")
-        .insert({
+        .upsert({        #upsert since update if there insert if not
             "user_id": str(auth.user.id),
             "game_id": str(log.game_id),
             "status": log.status,
-        })
+        }, on_conflict="user_id,game_id")
         .execute()
     )
-    return response.data
+    return response.data[0]
 
 
 

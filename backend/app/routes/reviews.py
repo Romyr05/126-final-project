@@ -76,7 +76,7 @@ def post_review(review: ReviewCreate, auth: AuthContext = Depends(get_auth_conte
     )
     return response.data[0]
 
-# updating
+# updating  
 @router.patch("/{game_id}")
 def patch_review(
     game_id: UUID,
