@@ -15,20 +15,21 @@ def get_user_log(auth: AuthContext = Depends(get_auth_context)):
     response = auth.supabase.table("game_logs").select("*").execute()
     return response.data
 
+@router.get("/status/{status}")
+def get_game_by_status(status: str, auth: AuthContext = Depends(get_auth_context)):
+    response = (
+        auth.supabase.table("game_logs").select("*").
+        eq("status", status).execute()
+    )
+    return response.data
+
+
 @router.get("/{game_id}")
 def get_game_log(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
     response = (
         auth.supabase.table("game_logs").select("*").
         eq("game_id", str(game_id)).
         single().execute()
-    )
-    return response.data
-
-@router.get("/status/{status}")
-def get_game_by_status(status: str, auth: AuthContext = Depends(get_auth_context)):
-    response = (
-        auth.supabase.table("game_logs").select("*").
-        eq("status", status).execute()
     )
     return response.data
 
