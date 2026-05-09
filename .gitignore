@@ -34,6 +34,8 @@ __pycache__
 # misc
 .DS_Store
 *.pem
+gameflix/.next/
+gameflix/node_modules/
 
 # debug
 npm-debug.log*
