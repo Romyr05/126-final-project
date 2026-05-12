@@ -15,10 +15,12 @@ def test_get_current_user_validates_bearer_token(monkeypatch):
         return SimpleNamespace(user=expected_user)
 
     fake_supabase = SimpleNamespace(auth=SimpleNamespace(get_user=fake_get_user))
+    fake_request = SimpleNamespace(cookies = {})
     monkeypatch.setattr(auth, "create_user_supabase", lambda token: fake_supabase)
 
     auth_context = auth.get_auth_context(
-        HTTPAuthorizationCredentials(
+        request = fake_request,
+        credentials = HTTPAuthorizationCredentials(
             scheme="Bearer",
             credentials="access-token",
         )
