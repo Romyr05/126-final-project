@@ -7,6 +7,7 @@ from app.routes.logs import router as logs_router
 from app.routes.recommendations import router as recommendations_router
 from app.routes.reviews import router as reviews_router
 from app.routes.users import router as users_router
+from app.routes.auth import router as auth_router
 
 app = FastAPI()
 
@@ -32,6 +33,7 @@ app.include_router(logs_router)
 app.include_router(recommendations_router)
 app.include_router(reviews_router)
 app.include_router(users_router)
+app.include_router(auth_router)
 
 
 @app.get("/")
