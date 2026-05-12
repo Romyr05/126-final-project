@@ -1,26 +1,25 @@
 /*
 this is the header of the landing page
 this is the "Header.tsx"
+header with a navigation links
 */
-import "tailwindcss";
 
 import NavLink from "./NavLink";
 import GameCard from "./GameCard";
 
-//compiles all the components to form the Header of the landing page
-function Header() {
-    return (
-        <div className="">
-            <NavLink text="Journal" href=""/>
-            <NavLink text="Somewhere" href="" />
-            <hr></hr>
-            <GameCard title = 'Game 1' imageStr=""></GameCard>
-        </div>
-            
-        
-        
+const navItems = [
+  { text: "Journal", href: "/Journal" },
+  { text: "Games", href: "/games" },
+  
+  { text: "Add nav here", href: "/addNav Here" } // add nav items here
+]
 
-    )
+export default function Header() {
+  return (
+    <header className="flex items-center gap-4 p-4 border-b">
+      {navItems.map((item) => (
+        <NavLink key={item.href} text={item.text} href={item.href} />
+      ))}
+    </header>
+  )
 }
-
-export default Header;

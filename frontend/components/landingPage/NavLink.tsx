@@ -5,18 +5,17 @@ this is the "NavLink.tsx"
 */
 
 //create an object to be used for the NavLink component
-type NavLinkProps = {
-  text: string;
-  href: string;
-};
+import Link from "next/link"
 
-function NavLink({ text, href }: NavLinkProps) {
-    return (
-    <div>
-        <a className = "" href={href}>{text}</a> 
-    </div>
-    
-  );
+type NavLinkProps = {
+  text: string
+  href: string
 }
 
-export default NavLink;
+export default function NavLink({ text, href }: NavLinkProps) {
+  return (
+    <Link href={href}>
+      {text}
+    </Link>
+  )
+}
