@@ -11,6 +11,7 @@ def get_my_user(auth: AuthContext = Depends(get_auth_context)):
     response = (
         auth.supabase.table("users")
         .select("*")
+        .eq("id", str(auth.user.id))
         .limit(1)
         .execute()
     )
