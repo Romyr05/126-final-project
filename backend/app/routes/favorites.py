@@ -9,9 +9,12 @@ router = APIRouter(prefix="/favorites", tags=["Favorites"])
 # getting 
 @router.get("")
 def get_user_favorites(auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("favorites")
         .select("*")
+        .eq("user_id", user_id)
         .execute()
     )
     return response.data
@@ -19,9 +22,12 @@ def get_user_favorites(auth: AuthContext = Depends(get_auth_context)):
 
 @router.get("/{game_id}")
 def get_favorite_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("favorites")
         .select("*")
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .limit(1)
         .execute()
@@ -35,10 +41,13 @@ def get_favorite_game(game_id: UUID, auth: AuthContext = Depends(get_auth_contex
 # posting 
 @router.post("")
 def post_favorite_game(favorite: FavoriteCreate, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     # this just check if same game already exist
     existing = (
         auth.supabase.table("favorites")
         .select("*")
+        .eq("user_id", user_id)
         .eq("game_id", str(favorite.game_id))
         .limit(1)
         .execute()
@@ -50,7 +59,7 @@ def post_favorite_game(favorite: FavoriteCreate, auth: AuthContext = Depends(get
     response = (
         auth.supabase.table("favorites")
         .insert({
-            "user_id": str(auth.user.id),
+            "user_id": user_id,
             "game_id": str(favorite.game_id),
         })
         .execute()
@@ -60,10 +69,13 @@ def post_favorite_game(favorite: FavoriteCreate, auth: AuthContext = Depends(get
 # deleting shit
 @router.delete("/{game_id}")
 def delete_favorite_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     # same as above checking first
     existing = (
         auth.supabase.table("favorites")
         .select("*")
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .limit(1)
         .execute()
@@ -75,6 +87,7 @@ def delete_favorite_game(game_id: UUID, auth: AuthContext = Depends(get_auth_con
     (
         auth.supabase.table("favorites")
         .delete()
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .execute()
     )

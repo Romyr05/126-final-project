@@ -24,9 +24,12 @@ def get_review_by_game(game_id: UUID):
 
 @router.get("/me")
 def get_my_reviews(auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("reviews")
         .select("*")
+        .eq("user_id", user_id)
         .order("date_updated", desc=True)
         .execute()
     )
@@ -35,9 +38,12 @@ def get_my_reviews(auth: AuthContext = Depends(get_auth_context)):
 
 @router.get("/{game_id}")
 def get_my_review_for_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("reviews")
         .select("*")
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .limit(1)
         .execute()
@@ -51,10 +57,13 @@ def get_my_review_for_game(game_id: UUID, auth: AuthContext = Depends(get_auth_c
 # posting
 @router.post("")
 def post_review(review: ReviewCreate, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     # check if existing game in that game 
     existing = (
         auth.supabase.table("reviews")
         .select("*")
+        .eq("user_id", user_id)
         .eq("game_id", str(review.game_id))
         .limit(1)
         .execute()
@@ -66,7 +75,7 @@ def post_review(review: ReviewCreate, auth: AuthContext = Depends(get_auth_conte
     response = (
         auth.supabase.table("reviews")
         .insert({
-            "user_id": str(auth.user.id),
+            "user_id": user_id,
             "game_id": str(review.game_id),
             "rating": review.rating,
             "review_text": review.review_text,
@@ -83,12 +92,15 @@ def patch_review(
     review: ReviewUpdate,
     auth: AuthContext = Depends(get_auth_context),
 ):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("reviews")
         .update({
             "rating": review.rating,
             "review_text": review.review_text,
         })
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .execute()
     )
@@ -101,9 +113,12 @@ def patch_review(
 # Deleting
 @router.delete("/{game_id}")
 def delete_review(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("reviews")
         .delete()
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .execute()
     )
