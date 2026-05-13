@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  backend:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Run tests
+      - name: Run backend tests
         working-directory: backend
         env:
           PYTHONPATH: .
@@ -30,3 +30,34 @@ jobs:
           SUPABASE_ANON_KEY: "fake-anon-key"
           SUPABASE_SERVICE_ROLE_KEY: "fake-service-role-key"
         run: pytest
+
+
+  frontend:
+    runs-on: ubuntu-latest
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json 
+
+      - name: intsall frontend 
+        working-directory: frontend
+        run: npm ci
+
+      - name: lint of frontend
+        working-directory: frontend
+        run: npm run lint
+
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+
+        
+      
