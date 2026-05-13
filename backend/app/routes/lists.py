@@ -9,7 +9,7 @@ from app.utils.auth import AuthContext, get_auth_context
 
 router = APIRouter(prefix="/lists", tags=["Lists"])
 
-
+# find the list_id inside of client table
 def _get_list(client, list_id: UUID):
     response = (
         client.table("lists")
@@ -24,20 +24,20 @@ def _get_list(client, list_id: UUID):
 
     return response.data[0]
 
-
+#find the list owned by that user based on the list_id and if it owns it
 def _get_owned_list(client, list_id: UUID, user_id: str):
-    list_data = _get_list(client, list_id)
+    list_data = _get_list(client, list_id)  # check if exist
 
     if list_data["user_id"] != str(user_id):
         raise HTTPException(status_code=403, detail="You do not own this list")
 
     return list_data
 
-
+# check if the list_data is public or private
 def _get_readable_list(client, list_id: UUID, user_id: str):
     list_data = _get_list(client, list_id)
 
-    if not list_data["is_public"] and list_data["user_id"] != str(user_id):
+    if not list_data["is_public"] and list_data["user_id"] != str(user_id):  #if list is private or not owned
         raise HTTPException(status_code=403, detail="This list is private")
 
     return list_data
@@ -45,9 +45,12 @@ def _get_readable_list(client, list_id: UUID, user_id: str):
 
 @router.get("")
 def get_my_lists(auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("lists")
         .select("*")
+        .eq("user_id", user_id)
         .order("updated_at", desc=True)
         .execute()
     )
@@ -87,10 +90,12 @@ def get_list_games(list_id: UUID, auth: AuthContext = Depends(get_auth_context))
 
 @router.post("")
 def post_list(list_data: ListCreate, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("lists")
         .insert({
-            "user_id": str(auth.user.id),
+            "user_id": user_id,
             "list_name": list_data.list_name,
             "description": list_data.description,
             "is_public": list_data.is_public,
@@ -106,7 +111,9 @@ def post_list_game(
     list_item: ListItemCreate,
     auth: AuthContext = Depends(get_auth_context),
 ):
-    _get_owned_list(auth.supabase, list_id, str(auth.user.id))
+    # can only use own list
+    user_id = str(auth.user.id)
+    _get_owned_list(auth.supabase, list_id, user_id) # this will flag if not owned
 
     existing = (
         auth.supabase.table("list_items")
@@ -137,7 +144,8 @@ def patch_list(
     list_data: ListUpdate,
     auth: AuthContext = Depends(get_auth_context),
 ):
-    _get_owned_list(auth.supabase, list_id, str(auth.user.id))
+    user_id = str(auth.user.id)  
+    _get_owned_list(auth.supabase, list_id, user_id)  # same logic
 
     update_data = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -155,6 +163,7 @@ def patch_list(
     response = (
         auth.supabase.table("lists")
         .update(update_data)
+        .eq("user_id", user_id)
         .eq("list_id", str(list_id))
         .execute()
     )
@@ -185,9 +194,12 @@ def delete_list_game(
 
 @router.delete("/{list_id}")
 def delete_list(list_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("lists")
         .delete()
+        .eq("user_id", user_id)
         .eq("list_id", str(list_id))
         .execute()
     )

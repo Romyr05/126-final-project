@@ -9,6 +9,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T>{
     headers:{
       "Content-type" : "application/json",
       ...init?.headers,
+      credentials: "include"
     },
   });
 

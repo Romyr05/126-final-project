@@ -21,7 +21,20 @@ function GameCard({ gameId, title, imageStr, rating }: GameCardProps) {
           alt={title}
         />
 
-        <h1>{title}</h1>
+//function that takes in an object as a parameter
+function GameCard({ title, imageStr }: GameCardProps) {
+    const img = imageStr;
+    
+    return (
+        <div className = "">
+            <h1>{title}</h1>
+            <img src='/images/dummyGameImg.png' alt='minecraft'></img>
+        </div>
+            
+        
+    );
+    
+}
 
         {rating !== undefined && rating !== null && (
           <p>⭐ {rating}</p>
