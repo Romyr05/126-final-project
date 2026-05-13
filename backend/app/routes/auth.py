@@ -39,8 +39,8 @@ def login(login_data: LoginRequestSchema, response: Response):  # response used 
 
     profile_response = (
         supabase_admin.table("users")
-        .select("id, username")
-        .eq("id", user.id)
+        .select("user_id, username")
+        .eq("user_id", str(user.id))
         .limit(1)
         .execute()
     )
@@ -75,8 +75,9 @@ def signup(signup_data: SignupRequestSchema, response: Response):
 
     #saving part
     supabase_admin.table("users").upsert({
-        "id": user.id,
+        "user_id": user.id,
         "username": signup_data.username,
+        "email": signup_data.email,
     }).execute()
 
     if session:
@@ -117,9 +118,9 @@ def get_me(auth: AuthContext = Depends(get_auth_context)):
         "username": profile.get("username"),
     }
 
-
+# for expired tokens
 # refreshes the user saved cookies   (new session)
-@router.post("/refresh")
+@router.post("/refresh", response_model = AuthResponseSchema)
 def refresh(response: Response, request: Request):
     refresh_token = request.cookies.get(settings.REFRESH_COOKIE_NAME) # get in browser the refresh_token
 
@@ -133,8 +134,9 @@ def refresh(response: Response, request: Request):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     session = auth_response.session
+    user = auth_response.user
 
-    if not session or not session.access_token or not session.refresh_token:
+    if not session or not user or not session.access_token or not session.refresh_token:
         clear_auth_cookies(response)
         raise HTTPException(status_code=401, detail="Could not refresh session")
 
@@ -145,4 +147,20 @@ def refresh(response: Response, request: Request):
         refresh_token=session.refresh_token,
     )
 
-    return {"message": "Session refreshed"}
+    profile_response_admin = (
+        supabase_admin.table("users").select("username").eq("user_id", str(user.id))
+        .limit(1).execute()
+    )
+    
+    if (profile_response_admin.data):
+        profile = profile_response_admin.data[0]
+    else:
+        profile = {}
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "username": profile.get("username"),
+    }
+
+    # return {"message": "Session refreshed"}

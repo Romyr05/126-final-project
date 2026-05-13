@@ -35,10 +35,12 @@ def test_get_current_user_rejects_invalid_token(monkeypatch):
         auth=SimpleNamespace(get_user=lambda token: SimpleNamespace(user=None))
     )
     monkeypatch.setattr(auth, "create_user_supabase", lambda token: fake_supabase)
+    fake_request = SimpleNamespace(cookies={})
 
     with pytest.raises(HTTPException) as exc_info:
         auth.get_auth_context(
-            HTTPAuthorizationCredentials(
+            request=fake_request,
+            credentials=HTTPAuthorizationCredentials(
                 scheme="Bearer",
                 credentials="bad-token",
             )

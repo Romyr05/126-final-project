@@ -11,7 +11,7 @@ class Settings:
     SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-    FRONTEND_LINK = os.getenv("FRONTEND_LINK", "http://localhost:3000")
+    FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 
     COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"   #for https purposes
     ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token") # this is where store supabase access token

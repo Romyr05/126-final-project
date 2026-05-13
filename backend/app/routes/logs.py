@@ -12,13 +12,17 @@ router = APIRouter(prefix ="/logs", tags = ["Logs"])
 #getting shit
 @router.get("")
 def get_user_log(auth: AuthContext = Depends(get_auth_context)):
-    response = auth.supabase.table("game_logs").select("*").execute()
+    user_id = str(auth.user.id)
+    response = auth.supabase.table("game_logs").select("*").eq("user_id", user_id).execute()
     return response.data
 
 @router.get("/status/{status}")
 def get_game_by_status(status: str, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("game_logs").select("*").
+        eq("user_id", user_id).
         eq("status", status).execute()
     )
     return response.data
@@ -26,8 +30,11 @@ def get_game_by_status(status: str, auth: AuthContext = Depends(get_auth_context
 
 @router.get("/{game_id}")
 def get_game_log(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("game_logs").select("*").
+        eq("user_id", user_id).
         eq("game_id", str(game_id)).
         limit(1).execute()
     )
@@ -37,10 +44,12 @@ def get_game_log(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
 # post
 @router.post("")
 def post_log_game(log: LogCreate, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("game_logs")
         .upsert({        #upsert since update if there insert if not
-            "user_id": str(auth.user.id),
+            "user_id": user_id,
             "game_id": str(log.game_id),
             "status": log.status,
         }, on_conflict="user_id,game_id")
@@ -58,9 +67,12 @@ def patch_log_game(
     log: LogCreate,
     auth: AuthContext = Depends(get_auth_context),
 ):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("game_logs")
         .update({"status": log.status})
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .execute()
     )
@@ -76,9 +88,12 @@ def patch_log_game(
 # delete
 @router.delete("/{game_id}")
 def delete_log_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
+    user_id = str(auth.user.id)
+
     response = (
         auth.supabase.table("game_logs")
         .delete()
+        .eq("user_id", user_id)
         .eq("game_id", str(game_id))
         .execute()
     )
