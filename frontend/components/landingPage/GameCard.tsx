@@ -12,7 +12,7 @@ type GameCardProps = {
 
 //function that takes in an object as a parameter
 function GameCard({ title, imageStr }: GameCardProps) {
-    let img = imageStr;
+    const img = imageStr;
     
     return (
         <div className = "">
