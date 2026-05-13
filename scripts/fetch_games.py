@@ -119,7 +119,7 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # goes until there is none
-    games = fetch_all_games(max_pages= None)
+    games = fetch_all_games(max_pages= 10)
 
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as file:

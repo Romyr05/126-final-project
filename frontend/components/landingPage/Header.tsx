@@ -5,7 +5,6 @@ header with a navigation links
 */
 
 import NavLink from "./NavLink";
-import GameCard from "./GameCard";
 
 const navItems = [
   { text: "Journal", href: "/Journal" },
