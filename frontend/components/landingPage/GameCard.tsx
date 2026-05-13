@@ -4,6 +4,7 @@ this is the "GameCard.tsx"
 */
 
 import Link from "next/link"
+import Image from "next/image"
 
 type GameCardProps = {
   gameId: string
@@ -16,9 +17,11 @@ function GameCard({ gameId, title, imageStr, rating }: GameCardProps) {
   return (
     <Link href={`/games/${gameId}`}>
       <div>
-        <img
+        <Image
           src={imageStr || "/images/dummyGameImg.png"}
           alt={title}
+          width={150}
+          height={120}
         />
 
 //function that takes in an object as a parameter
