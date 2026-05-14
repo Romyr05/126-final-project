@@ -13,11 +13,15 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T>{
     },
   });
 
+  // if error ignore and make null
+  const data = await response.json().catch(() => null)
+
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    // with fall back if no
+    throw new Error(data?.detail ?? `API request failed: ${response.status}`)
   }
 
-  return response.json() as Promise<T>;
+  return data as T;
 }
 
 //Requests all games
