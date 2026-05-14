@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import React, { useState } from "react"
+import Link from "next/link"
 
 
 
@@ -121,7 +122,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   {loading ? "Creating..." : "Create Account"}
                 </Button>
                 <FieldDescription className="px-6 text-center">
-                  Already have an account? <a href="#">Sign in</a>
+                  Already have an account? <Link href ="/login">Log in</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>
