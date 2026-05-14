@@ -22,6 +22,9 @@ import React, { useState } from "react"
 import Link from "next/link"
 
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const router = useRouter()
@@ -35,7 +38,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
 
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>){
+  async function handleSubmit(event: FormEvent<HTMLFormElement>){  //type form submit
     event.preventDefault()
     setError("")
   
@@ -48,20 +51,32 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       return
     }
 
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters")
+      return
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
+
     setLoading(true)
 
     try{
       const checking = await signup({
         username,email,password
       })
+      await sleep(700)
       
       //For not to run every edit or what
       if (checking){
         //The main screen
-        router.replace("/")
+        router.replace("/login")
       }
-    } catch{
-      setError("Could not create account")
+    } catch (err){
+      await sleep(700)
+      setError(err instanceof Error ? err.message: ("Could not create acccount"))
     } finally{
       setLoading(false)
     }
@@ -97,8 +112,6 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 required
               />
               <FieldDescription>
-                We&apos;ll use this to contact you. We will not share your email
-                with anyone else.
               </FieldDescription>
             </Field>
             <Field>
