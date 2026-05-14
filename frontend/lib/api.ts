@@ -3,21 +3,25 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   // You make the next public api url
 
-async function request<T>(path: string, init?: RequestInit): Promise<T>{
+export async function request<T>(path: string, init?: RequestInit): Promise<T>{
   const response = await fetch(`${API_URL}${path}`,{
-    ...init,
+    ...init,  //for the additional request i.e method and body
     credentials: "include",
     headers:{
       "Content-type" : "application/json",
-      ...init?.headers,
+      ...init?.headers,   //override
     },
   });
 
+  // if error ignore and make null
+  const data = await response.json().catch(() => null)
+
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    // with fall back if no
+    throw new Error(data?.detail ?? `API request failed: ${response.status}`)
   }
 
-  return response.json() as Promise<T>;
+  return data as T;
 }
 
 //Requests all games
