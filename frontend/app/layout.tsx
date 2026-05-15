@@ -1,9 +1,12 @@
 import "./globals.css";
+<<<<<<< Updated upstream
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
+=======
+>>>>>>> Stashed changes
 
 export default function RootLayout({
   children,

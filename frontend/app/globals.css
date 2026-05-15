@@ -1,4 +1,5 @@
 @import "tailwindcss";
+<<<<<<< Updated upstream
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -126,4 +127,85 @@
   html {
     @apply font-sans;
     }
+=======
+@tailwind utilities;
+
+* {
+    --color1-1 : #E7E7E7;
+    --color1-2 : #A7ABC2;
+    --color1-3 : #676F9D;
+    --color1-4 : #2D3250;
+    --color1-5 : #161827;
+    --color2-1 : #F9B17A;
+    --color2-2 : #93663E;
+}
+
+body {
+    background-color: var(--color1-2);
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 12px;
+    margin: 1.5em;
+}
+
+.reg-text-s {
+    font-size: 10px;
+    font-weight: 200;
+    color: var(--color1-5);
+}
+
+.reg-text {
+    font-size: 12px;
+    font-weight: 200;
+    color: var(--color1-5);
+}
+
+.reg-text-m {
+    font-size: 16px;
+    font-weight: 200;
+    color: var(--color1-5);
+}
+
+.reg-text-l {
+    font-size: 24px;
+    font-weight: 200;
+    color: var(--color1-5);
+}
+
+.emp-text-s {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color2-2);
+}
+
+.emp-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color2-2);
+}
+
+.emp-text-m {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color2-2)
+}
+
+.emp-text-l {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color2-2)
+}
+
+.fade-text-s {
+    font-size: 10px;
+    font-weight: 200;
+    color: var(--color1-5);
+    opacity: 60%;
+}
+
+.fade-text {
+    font-size: 12px;
+    font-weight: 200;
+    color: var(--color1-5);
+    opacity: 60%;
+>>>>>>> Stashed changes
 }
