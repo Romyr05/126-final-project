@@ -8,8 +8,8 @@ differs in format from the landing page gamecards
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import GenreTag from "./GenreTag";
 import RatingsPanel from "./RatingsPanel";
-import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 import { ReactNode } from "react";
+import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 
 type CardData = {
     title : string,
