@@ -65,3 +65,5 @@ games_raw.json
 
 #codex
 .codex
+frontend/package-lock.json
+frontend/package.json

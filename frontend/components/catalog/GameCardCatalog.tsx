@@ -33,7 +33,7 @@ type Data = {
 
 
 export default async function GameCardCatalog(data : Data) {
-    const allGames = await getGames<any>(data.limit, data.offset);
+    const allGames = await getGames<Game[]>(data.limit, data.offset);
 
     return (
         <div className="

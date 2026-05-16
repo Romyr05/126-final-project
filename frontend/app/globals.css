@@ -1,7 +1,7 @@
 @import "tailwindcss";
-<<<<<<< Updated upstream
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@tailwind utilities;
 
 @custom-variant dark (&:is(.dark *));
 
@@ -127,8 +127,7 @@
   html {
     @apply font-sans;
     }
-=======
-@tailwind utilities;
+}
 
 * {
     --color1-1 : #E7E7E7;
@@ -207,5 +206,4 @@ body {
     font-weight: 200;
     color: var(--color1-5);
     opacity: 60%;
->>>>>>> Stashed changes
 }
