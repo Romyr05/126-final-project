@@ -31,9 +31,15 @@ type Data = {
     offset : number
 }
 
+// Made this since Game[] is alraedy an array and wala . property ang array
+type gameOutput = {
+    count: number,
+    games: Game[];
+};
+
 
 export default async function GameCardCatalog(data : Data) {
-    const allGames = await getGames<Game[]>(data.limit, data.offset);
+    const allGames = await getGames<gameOutput>(data.limit, data.offset);
 
     return (
         <div className="
