@@ -25,8 +25,11 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T>{
 }
 
 //Requests all games
-export function getGames<T>() {
-  return request<T>("/games");
+export function getGames<T>(
+  limit : number = 20,
+  offset : number = 0
+) {
+  return request<T>(`/games?limit=${limit}&offset=${offset}`);
 }
 
 //Requests by game id

@@ -81,7 +81,7 @@ def fetch_games_page(access_token: str, offset: int):
 
 
 
-def fetch_all_games(max_pages: None):
+def fetch_all_games(max_pages: int = 14):
     access_token = getAccessToken()
 
     all_games = []
@@ -119,7 +119,7 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # goes until there is none
-    games = fetch_all_games(max_pages= None)
+    games = fetch_all_games(max_pages= 14)
 
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
