@@ -15,7 +15,7 @@ def set_auth_cookies(response:Response, access_token:str, refresh_token:str) -> 
         value = access_token   ,   
         httponly = True,                    #frontend js cant read
         secure = settings.COOKIE_SECURE,        #https or http
-        samesite ="lax",                 #default
+        samesite = settings.COOKIE_SAMESITE,   #lax for local default but deployment issue need env
         path = "/" ,   #avail to all routes
         max_age = access_token_max_age,
     )
@@ -27,7 +27,7 @@ def set_auth_cookies(response:Response, access_token:str, refresh_token:str) -> 
         value = refresh_token,
         httponly = True,
         secure=settings.COOKIE_SECURE,
-        samesite="lax",
+        samesite=settings.COOKIE_SAMESITE,
         max_age=refresh_token_max_age,
         path="/",
     )
@@ -40,12 +40,15 @@ def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(
         key = settings.ACCESS_COOKIE_NAME,
         path ="/",
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
     )
 
 
     response.delete_cookie(
         key = settings.REFRESH_COOKIE_NAME,
         path ="/",
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
     )
-
 

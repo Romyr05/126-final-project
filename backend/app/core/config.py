@@ -14,6 +14,7 @@ class Settings:
     FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 
     COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"   #for https purposes
+    COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax").lower()
     ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token") # this is where store supabase access token
     REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "refresh_token") # refresh token of supabase (get new one)
 
