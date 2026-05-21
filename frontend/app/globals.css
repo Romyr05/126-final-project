@@ -49,38 +49,54 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --vault-bg: #0f0f10;
+    --vault-bg-soft: #141416;
+    --vault-surface: #1f1f22;
+    --vault-surface-raised: #2a2a2e;
+    --vault-border: #3d3547;
+    --vault-border-strong: #584967;
+    --vault-text: #f1eef5;
+    --vault-muted: #b7acbf;
+    --vault-muted-strong: #8f8599;
+    --vault-purple: #d8b4fe;
+    --vault-purple-strong: #c084fc;
+    --vault-cyan: #00e5d4;
+    --vault-green: #a7f3b0;
+    --vault-danger: #ff6b7a;
+    --vault-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+
+    --background: var(--vault-bg);
+    --foreground: var(--vault-text);
+    --card: var(--vault-surface);
+    --card-foreground: var(--vault-text);
+    --popover: var(--vault-surface);
+    --popover-foreground: var(--vault-text);
+    --primary: var(--vault-purple);
+    --primary-foreground: #1a1023;
+    --secondary: var(--vault-surface-raised);
+    --secondary-foreground: var(--vault-text);
+    --muted: var(--vault-surface-raised);
+    --muted-foreground: var(--vault-muted);
+    --accent: var(--vault-purple);
+    --accent-foreground: #1a1023;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --border: var(--vault-border);
+    --input: var(--vault-border);
+    --ring: var(--vault-purple);
+    --chart-1: var(--vault-purple);
+    --chart-2: var(--vault-cyan);
+    --chart-3: var(--vault-green);
+    --chart-4: var(--vault-muted);
+    --chart-5: var(--vault-surface-raised);
+    --radius: 0.5rem;
+    --sidebar: var(--vault-bg-soft);
+    --sidebar-foreground: var(--vault-text);
+    --sidebar-primary: var(--vault-purple);
+    --sidebar-primary-foreground: #1a1023;
+    --sidebar-accent: var(--vault-surface);
+    --sidebar-accent-foreground: var(--vault-text);
+    --sidebar-border: var(--vault-border);
+    --sidebar-ring: var(--vault-purple);
 }
 
 .dark {
@@ -130,20 +146,39 @@
 }
 
 * {
-    --color1-1 : #E7E7E7;
-    --color1-2 : #A7ABC2;
-    --color1-3 : #676F9D;
-    --color1-4 : #2D3250;
-    --color1-5 : #161827;
-    --color2-1 : #F9B17A;
-    --color2-2 : #93663E;
+    --color1-1: var(--vault-surface);
+    --color1-2: var(--vault-bg);
+    --color1-3: var(--vault-border-strong);
+    --color1-4: var(--vault-muted);
+    --color1-5: var(--vault-text);
+    --color2-1: var(--vault-purple);
+    --color2-2: var(--vault-purple);
+    box-sizing: border-box;
 }
 
 body {
-    background-color: var(--color1-2);
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    font-size: 12px;
-    margin: 1.5em;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 50% 0%, rgb(216 180 254 / 8%), transparent 34rem),
+        var(--vault-bg);
+    color: var(--vault-text);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    margin: 0;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
 }
 
 .reg-text-s {
@@ -155,19 +190,19 @@ body {
 .reg-text {
     font-size: 12px;
     font-weight: 200;
-    color: var(--color1-5);
+    color: var(--vault-muted);
 }
 
 .reg-text-m {
     font-size: 16px;
     font-weight: 200;
-    color: var(--color1-5);
+    color: var(--vault-muted);
 }
 
 .reg-text-l {
     font-size: 24px;
     font-weight: 200;
-    color: var(--color1-5);
+    color: var(--vault-text);
 }
 
 .emp-text-s {
@@ -204,6 +239,6 @@ body {
 .fade-text {
     font-size: 12px;
     font-weight: 200;
-    color: var(--color1-5);
+    color: var(--vault-muted);
     opacity: 60%;
 }
