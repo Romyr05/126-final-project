@@ -34,7 +34,7 @@ def getAccessToken() -> str:
         raise RuntimeError("Missing TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET in .env")
     
     response = requests.post(TWITCH_URL_TOKEN,params=params,timeout=30)
-    response.raise_for_status()
+    response.raise_for_status()  #http status
     data = response.json()
 
     return data["access_token"]

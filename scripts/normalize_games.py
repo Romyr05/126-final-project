@@ -34,11 +34,15 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 
+# Splits a list into smaller batches so Supabase requests do not send too many
+# rows at once. Each yielded value is a slice of the original list.
 def chunked(items, size):
     for index in range(0, len(items), size):
         yield items[index:index + size]
 
 
+# Cleans text fields from the raw IGDB data by converting the value to a
+# string, trimming outer spaces, and collapsing repeated whitespace.
 def clean_text(value):
     if value is None:
         return None
@@ -51,6 +55,8 @@ def clean_text(value):
     return cleaned
 
 
+# Normalizes names used for genres, tags, themes, and platforms. It reuses
+# clean_text first, then lowercases the result so duplicate names match.
 def clean_name(value):
     cleaned = clean_text(value)
 
@@ -60,6 +66,8 @@ def clean_name(value):
     return cleaned.lower()
 
 
+# Converts an IGDB Unix timestamp into a release year. Invalid or missing
+# timestamps are ignored by returning None.
 def unix_to_year(timestamp):
     if timestamp is None:
         return None
@@ -70,6 +78,8 @@ def unix_to_year(timestamp):
         return None
 
 
+# Returns the first value that is not None. This is used when the script has
+# multiple possible source fields for the same final value.
 def first_present(*values):
     for value in values:
         if value is not None:
@@ -78,6 +88,8 @@ def first_present(*values):
     return None
 
 
+# Converts a raw rating value into a float rounded to two decimal places.
+# Bad values are ignored so one invalid rating does not stop normalization.
 def clean_rating(value):
     if value is None:
         return None
@@ -88,6 +100,8 @@ def clean_rating(value):
         return None
 
 
+# Extracts the cover image URL from IGDB cover data. IGDB may return protocol-
+# relative URLs, so this also adds https and asks for a larger cover size.
 def get_cover_url(cover):
     if not cover:
         return None
@@ -103,6 +117,8 @@ def get_cover_url(cover):
     return url.replace("t_thumb", "t_cover_big")
 
 
+# Builds the row that will be upserted into the games table. Games without an
+# IGDB id or title are skipped because those fields are required.
 def normalize_game_payload(game):
     igdb_id = game.get("id")
     title = clean_text(game.get("name"))
@@ -120,12 +136,14 @@ def normalize_game_payload(game):
                 game.get("total_rating"),
                 game.get("rating"),
                 game.get("aggregated_rating"),
-            )
+            ) #none if empty
         ),
         "cover_image": get_cover_url(game.get("cover")),
     }
 
 
+# Collects a unique set of cleaned names from IGDB objects that have a "name"
+# field, such as genres, themes, keywords, or platforms.
 def collect_names(items):
     names = set()
 
@@ -138,6 +156,8 @@ def collect_names(items):
     return names
 
 
+# Combines IGDB keywords, themes, and platforms into app tags. Each source is
+# normalized into lowercase names so they can be stored in one tags table.
 def collect_tag_names(game):
     tag_sources = []
     tag_sources.extend(game.get("keywords", []))
@@ -147,6 +167,8 @@ def collect_tag_names(game):
     return collect_names(tag_sources)
 
 
+# Upserts rows into a Supabase table in batches. The on_conflict argument tells
+# Supabase which unique column or columns should be used to avoid duplicates.
 def upsert_rows(table, rows, on_conflict, batch_size):
     if not rows:
         return
@@ -164,6 +186,8 @@ def upsert_rows(table, rows, on_conflict, batch_size):
         )
 
 
+# Looks up database ids for a list of known values, such as genre names or
+# IGDB ids. It returns a dictionary where each lookup value maps to its id.
 def select_ids(table, id_column, lookup_column, values):
     id_by_value = {}
     values = list(values)
@@ -183,6 +207,8 @@ def select_ids(table, id_column, lookup_column, values):
     return id_by_value
 
 
+# Inserts or updates normalized game rows, then fetches their internal game_id
+# values so the script can create genre and tag link rows.
 def upsert_games(game_payloads, batch_size):
     upsert_rows("games", game_payloads, "igdb_id", batch_size)
     igdb_ids = [game["igdb_id"] for game in game_payloads]
@@ -190,6 +216,8 @@ def upsert_games(game_payloads, batch_size):
     return select_ids("games", "game_id", "igdb_id", igdb_ids)
 
 
+# Inserts any genre or tag names that are not already in the local cache, then
+# refreshes the cache with their database ids for later relationship inserts.
 def upsert_names(table, id_column, names, cache, batch_size):
     missing_names = sorted(name for name in names if name not in cache)
 
@@ -201,11 +229,15 @@ def upsert_names(table, id_column, names, cache, batch_size):
     cache.update(select_ids(table, id_column, "name", missing_names))
 
 
+# Removes duplicate relationship rows before upserting them into join tables
+# like game_genres and game_tags.
 def upsert_links(table, rows, on_conflict, batch_size):
     unique_rows = [dict(row) for row in {tuple(sorted(row.items())) for row in rows}]
     upsert_rows(table, unique_rows, on_conflict, batch_size)
 
 
+# Normalizes one batch of raw IGDB games. It prepares game rows, collects genre
+# and tag names, upserts lookup tables, then writes game-genre and game-tag links.
 def normalize_batch(games, genre_cache, tag_cache, batch_size, link_batch_size):
     game_payloads = []
     genre_names_by_igdb_id = {}
@@ -285,6 +317,8 @@ def normalize_batch(games, genre_cache, tag_cache, batch_size, link_batch_size):
     return len(game_payloads), len(game_genre_rows), len(game_tag_rows)
 
 
+# Converts a number of seconds into a readable duration string for progress
+
 def format_duration(seconds):
     seconds = int(seconds)
     hours, seconds = divmod(seconds, 3600)
@@ -299,6 +333,8 @@ def format_duration(seconds):
     return f"{seconds}s"
 
 
+# Defines and reads command-line options for the normalization script, including
+# limits, offsets, and batch sizes.
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Normalize IGDB game data into Supabase in batches."
@@ -326,6 +362,8 @@ def parse_args():
     return parser.parse_args()
 
 
+# Runs the full normalization process. It loads raw games from disk, applies the
+# requested offset/limit, processes games in batches, and prints progress stats.
 def main():
     args = parse_args()
 
