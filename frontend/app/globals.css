@@ -158,9 +158,7 @@
 
 body {
     min-height: 100vh;
-    background:
-        radial-gradient(circle at 50% 0%, rgb(216 180 254 / 8%), transparent 34rem),
-        var(--vault-bg);
+    background: var(--vault-bg);
     color: var(--vault-text);
     font-family: var(--font-sans), Arial, Helvetica, sans-serif;
     font-size: 16px;
