@@ -131,6 +131,11 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
             </Field>
             <FieldGroup>
               <Field>
+                {error && (
+                <p className="text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
                 <Button type="submit" disabled={loading}>
                   {loading ? "Creating..." : "Create Account"}
                 </Button>
