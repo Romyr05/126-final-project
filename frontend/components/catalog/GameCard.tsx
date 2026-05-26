@@ -18,7 +18,7 @@ type CardData = {
     websiteRating : number | null,
     releaseYear : number | null,
     description : string | null,
-    image : string | null
+    image : string | null   
 };
 
 export default function GameCard(data : CardData) {
