@@ -8,7 +8,7 @@ STATUS_WEIGHTS = {
 
 GENRE_WEIGHT = 2.0
 TAG_WEIGHT = 1.0
-LIMIT_GAMES = 300
+LIMIT_GAMES = 500
 
 
 def get_recommendations_for_user(supabase, user_id: str, limit: int = 20):
@@ -23,8 +23,8 @@ def get_recommendations_for_user(supabase, user_id: str, limit: int = 20):
     #games allowed to be rated (format below)
     candidates = fetch_candidate_games(
         supabase,
-        excluded_game_ids= activity["game_ids"], 
-        number_games_limit=max(LIMIT_GAMES, limit * 10),
+        excluded_game_ids=activity["game_ids"],
+        number_games_limit=LIMIT_GAMES,
     )
 
     #score the games accordingly 
@@ -251,7 +251,8 @@ def get_quality_score(game):
     return (float(external_rating) / 20) + float(avg_user_rating)
 
 
-def get_cold_start_recommendations(supabase, limit: int):
+#cold start games based on user rating and external
+def get_cold_start_recommendations(supabase, limit: int = 20):
     response = (
         supabase.table("games")
         .select(
