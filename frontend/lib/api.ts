@@ -42,3 +42,29 @@ export function getGame<T>(gameId: string) {
 export function getRecommendations<T>() {
   return request<T>("/recommendations");
 }
+
+//-------------------------------- Journal API Requests ---------------------------------
+export function createLog<T>(payload: {
+  game_id: string
+  status: string
+  review?: string
+  rating?: number
+}, accessToken: string) {
+  return request<T>("/logs", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { Authorization: `Bearer ${accessToken}` }
+  })
+}
+
+export function getLogs<T>() {
+  return request<T>("/logs")
+}
+
+export function getMyReview<T>(gameId: string) {
+  return request<T>(`/reviews/${gameId}`)
+}
+
+export function searchGames<T>(query: string) {
+  return request<T>(`/games/search?q=${encodeURIComponent(query)}`)
+}
