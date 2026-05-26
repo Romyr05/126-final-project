@@ -53,8 +53,13 @@ return(
 
             <nav className="flex items-center gap-8 justify-self-center">
                 <Link href = "/catalog" className="hover:!text-[var(--vault-purple)]">Catalog</Link>
+<<<<<<< HEAD
                 <Link href = "/Journal" className="hover:!text-[var(--vault-purple)]">Journal</Link>
                 <Link href = "/LandingPage" className="hover:!text-[var(--vault-purple)]">Feed</Link>
+=======
+                <Link href = "/journal" className="hover:!text-[var(--vault-purple)]">Journal</Link>
+                <Link href = "/landingPage" className="hover:!text-[var(--vault-purple)]">Feed</Link>
+>>>>>>> 1eb1e2f97d3c0f709c07405cff90619a6860c699
             </nav>
             
                 <Link
