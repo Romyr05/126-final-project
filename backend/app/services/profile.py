@@ -39,7 +39,16 @@ def get_profile_favorites(auth: AuthContext, limit: int = 4):
     )
 
     
-    return response.data or []
+    return [
+        {
+            "review_id": row["review_id"],
+            "rating": row["rating"],
+            "review_text": row["review_text"],
+            "date_updated": row["date_updated"],
+            "game": row["games"],
+        }
+        for row in response.data or []
+    ]
     
     
     
