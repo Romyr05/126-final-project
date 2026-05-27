@@ -8,38 +8,30 @@ offset => offset from ID 1
 uses the API to fetch the games then displays
 */
 
+"use client"
+
 import GameCard from "@/components/catalog/GameCard";
-import { getGames } from "@/lib/api";
-
-type Game = {
-    game_id : number,
-    igdb_id : number,
-    title : string,
-    description : string | null,
-    release_year : number | null,
-    external_rating : number | null,
-    avg_user_rating : number | null,
-    cover_image : string | null,
-    created_at : string,
-    updated_at : string,
-    slug : string | null
-};
-
+import type { Game } from "@/app/catalog/page";
 
 type Data = {
-    limit : number,
-    offset : number
+    games : Game[],
+    //limit : number,
+    //offset : number,
+    searchQuery : string,
+    includedGenres : string[]
 }
 
-// Made this since Game[] is alraedy an array and wala . property ang array
-type gameOutput = {
-    count: number,
-    games: Game[];
-};
 
+export default function GameCardCatalog(data : Data) {
+    let filteredGames : Game[] = data.games;
 
-export default async function GameCardCatalog(data : Data) {
-    const allGames = await getGames<gameOutput>(data.limit, data.offset);
+    if (data.searchQuery != '') {
+        filteredGames =
+            filteredGames.filter((g : Game) =>
+                g.title.includes(data.searchQuery)
+            );
+    }
+
 
     return (
         <div className="
@@ -47,10 +39,10 @@ export default async function GameCardCatalog(data : Data) {
             grid-cols-3
             auto-rows-[60vh]
             gap-4
-            w-8/12 h-auto
+            w-auto h-auto
         
         ">
-            {allGames.games.map((game : Game) => (
+            {filteredGames.map((game : Game) => (
                 <GameCard 
                     key={game.game_id}
                     title={game.title}
