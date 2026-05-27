@@ -22,7 +22,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_origins=settings.FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -51,11 +51,11 @@ async def protect_cookie_auth_writes(request: Request, call_next):
     uses_bearer_auth = bool(request.headers.get("authorization"))
 
     if unsafe_method and has_auth_cookie and not uses_bearer_auth:
-        allowed_origin = settings.FRONTEND_ORIGIN.rstrip("/")
+        allowed_origins = set(settings.FRONTEND_ORIGINS)
         origin = request.headers.get("origin")
         referer_origin = _origin_from_url(request.headers.get("referer"))
 
-        if origin != allowed_origin and referer_origin != allowed_origin:
+        if origin not in allowed_origins and referer_origin not in allowed_origins:
             return JSONResponse(
                 status_code=403,
                 content={"detail": "Invalid request origin"},

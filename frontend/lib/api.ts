@@ -1,17 +1,42 @@
 // This is a helper so that you will not run fetch over and over again
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-  // You make the next public api url
+function getApiUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, "");
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:8000";
+  }
+
+  throw new Error(
+    "Missing NEXT_PUBLIC_API_URL. Set it in Vercel to your Render backend URL, then redeploy."
+  );
+}
+
+const API_URL = getApiUrl();
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T>{
-  const response = await fetch(`${API_URL}${path}`,{
-    ...init,  //for the additional request i.e method and body
-    credentials: "include",
-    headers:{
-      "Content-type" : "application/json",
-      ...init?.headers,   //override
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}${path}`,{
+      ...init,  //for the additional request i.e method and body
+      credentials: "include",
+      headers:{
+        "Content-type" : "application/json",
+        ...init?.headers,   //override
+      },
+    });
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `Unable to reach backend at ${API_URL}. Check NEXT_PUBLIC_API_URL, Render service status, HTTPS, and CORS. Original error: ${error.message}`
+        : `Unable to reach backend at ${API_URL}. Check NEXT_PUBLIC_API_URL, Render service status, HTTPS, and CORS.`
+    );
+  }
 
   // if error ignore and make null
   const data = await response.json().catch(() => null)

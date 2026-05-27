@@ -12,6 +12,11 @@ class Settings:
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+    FRONTEND_ORIGINS = [
+        origin.strip().rstrip("/")
+        for origin in os.getenv("FRONTEND_ORIGINS", FRONTEND_ORIGIN).split(",")
+        if origin.strip()
+    ]
 
     COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"   #for https purposes
     COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax").lower()  # default lax (cross site scripting security)
