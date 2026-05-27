@@ -12,8 +12,7 @@ type Data = {
 }
 
 export default function FilterButton(data : Data) {
-    let toggleState = false;
-    let selected = data.searchGenres.includes(data.name);
+    const selected = data.searchGenres.includes(data.name);
 
     return (
         <button

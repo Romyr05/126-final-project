@@ -23,17 +23,6 @@ type Data = {
 
 
 export default function GameCardCatalog(data : Data) {
-    let filteredGames : Game[] = data.games;
-
-    // if (data.searchQuery != '') {
-    //     filteredGames =
-    //         filteredGames.filter((g : Game) => {
-    //             let formattedQuery = data.searchQuery.toLowerCase().trim();
-    //             return g.title.toLowerCase().includes(formattedQuery);
-    //         });
-    // }
-
-
     return (
         <div className="
             grid
@@ -43,7 +32,7 @@ export default function GameCardCatalog(data : Data) {
             w-auto h-auto
         
         ">
-            {filteredGames.map((game : Game) => (
+            {data.games.map((game : Game) => (
                 <GameCard 
                     key={game.game_id}
                     title={game.title}
