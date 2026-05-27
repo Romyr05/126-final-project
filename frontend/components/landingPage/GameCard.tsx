@@ -12,16 +12,27 @@ type GameCardProps = {
 }
 
 function GameCard({ title, genres, image }: GameCardProps) {
+    const initials = title
+        .split(/\s+/)
+        .map((word) => word[0])
+        .join("")
+        .slice(0, 3)
+        .toUpperCase();
+
     return (
         <div className="relative w-64 h-64 flex-shrink-0 overflow-hidden">
             <Card>
                 {/* Background Image */}
-                {image && (
+                {image ? (
                     <img
                         src={image}
                         alt={title}
                         className="absolute inset-0 w-full h-full object-cover rounded-full"
                     />
+                ) : (
+                    <div className="absolute inset-0 grid place-items-center rounded-full bg-zinc-800 text-4xl font-black text-zinc-500">
+                        {initials}
+                    </div>
                 )}
 
                 {/* Overlay */}
