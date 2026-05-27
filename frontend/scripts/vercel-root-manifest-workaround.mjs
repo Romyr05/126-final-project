@@ -1,4 +1,10 @@
-import { copyFileSync, existsSync, mkdirSync, symlinkSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  symlinkSync,
+} from "node:fs";
 import path from "node:path";
 
 if (process.env.VERCEL !== "1") {
@@ -9,13 +15,54 @@ const frontendDir = process.cwd();
 const repoRoot = path.dirname(frontendDir);
 const frontendNextDir = path.join(frontendDir, ".next");
 const rootNextDir = path.join(repoRoot, ".next");
-const frontendNextPackageDir = path.join(frontendDir, "node_modules", "next");
-const rootNextPackageDir = path.join(repoRoot, "node_modules", "next");
+const frontendNodeModulesDir = path.join(frontendDir, "node_modules");
+const rootNodeModulesDir = path.join(repoRoot, "node_modules");
 const routesManifest = path.join(frontendNextDir, "routes-manifest.json");
 const deterministicRoutesManifest = path.join(
   frontendNextDir,
   "routes-manifest-deterministic.json",
 );
+
+function linkIfMissing(source, target) {
+  if (existsSync(target)) {
+    return;
+  }
+
+  symlinkSync(source, target, "dir");
+}
+
+function exposeFrontendNodeModulesAtRepoRoot() {
+  if (!existsSync(frontendNodeModulesDir)) {
+    return;
+  }
+
+  mkdirSync(rootNodeModulesDir, { recursive: true });
+
+  for (const entry of readdirSync(frontendNodeModulesDir, {
+    withFileTypes: true,
+  })) {
+    if (entry.name === ".bin") {
+      continue;
+    }
+
+    const source = path.join(frontendNodeModulesDir, entry.name);
+    const target = path.join(rootNodeModulesDir, entry.name);
+
+    if (!entry.name.startsWith("@")) {
+      linkIfMissing(source, target);
+      continue;
+    }
+
+    mkdirSync(target, { recursive: true });
+
+    for (const scopedEntry of readdirSync(source, { withFileTypes: true })) {
+      linkIfMissing(
+        path.join(source, scopedEntry.name),
+        path.join(target, scopedEntry.name),
+      );
+    }
+  }
+}
 
 if (!existsSync(routesManifest)) {
   console.warn(
@@ -45,21 +92,4 @@ if (!existsSync(rootDeterministicRoutesManifest)) {
   copyFileSync(deterministicRoutesManifest, rootDeterministicRoutesManifest);
 }
 
-if (existsSync(frontendNextPackageDir) && !existsSync(rootNextPackageDir)) {
-  mkdirSync(path.dirname(rootNextPackageDir), { recursive: true });
-
-  try {
-    symlinkSync(frontendNextPackageDir, rootNextPackageDir, "dir");
-  } catch {
-    const adapterFile = path.join(
-      "dist",
-      "build",
-      "adapter",
-      "setup-node-env.external.js",
-    );
-    const rootAdapterFile = path.join(rootNextPackageDir, adapterFile);
-
-    mkdirSync(path.dirname(rootAdapterFile), { recursive: true });
-    copyFileSync(path.join(frontendNextPackageDir, adapterFile), rootAdapterFile);
-  }
-}
+exposeFrontendNodeModulesAtRepoRoot();
