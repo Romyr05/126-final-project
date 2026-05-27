@@ -69,8 +69,12 @@ export function getGame<T>(gameId: string) {
 
 
 // Requests Recommendation
-export function getRecommendations<T>() {
-  return request<T>("/recommendations");
+export function getRecommendations<T>(limit: number = 6) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+  });
+
+  return request<T>(`/recommendations?${params.toString()}`);
 }
 
 //-------------------------------- Journal API Requests ---------------------------------
