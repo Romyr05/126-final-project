@@ -67,6 +67,19 @@ export function getGame<T>(gameId: string) {
   return request<T>(`/games/${gameId}`);
 }
 
+// Requests by game slug
+export function getGameBySlug<T>(slug: string) {
+  return request<T>(`/games/slug/${encodeURIComponent(slug)}`);
+}
+
+// Favorites
+export function addFavorite<T>(gameId: string) {
+  return request<T>("/favorites", {
+    method: "POST",
+    body: JSON.stringify({ game_id: gameId }),
+  });
+}
+
 
 // Requests Recommendation
 export function getRecommendations<T>(limit: number = 6) {
@@ -97,6 +110,18 @@ export function getLogs<T>() {
 
 export function getMyReview<T>(gameId: string) {
   return request<T>(`/reviews/${gameId}`)
+}
+
+export function getMyReviews<T>() {
+  return request<T>("/reviews/me")
+}
+
+export function getRecentReviews<T>(limit: number = 4) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+  })
+
+  return request<T>(`/reviews/recent?${params.toString()}`)
 }
 
 export function searchGames<T>(query: string) {

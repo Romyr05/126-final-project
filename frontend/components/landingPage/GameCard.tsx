@@ -4,6 +4,8 @@ this is the "GameCard.tsx"
 */
 
 import { Card, CardFooter } from "@/components/ui/card";
+import Image from "next/image";
+import { formatGenreLabel } from "@/lib/formatGenre";
 
 type GameCardProps = {
     title: string,  
@@ -24,9 +26,11 @@ function GameCard({ title, genres, image }: GameCardProps) {
             <Card>
                 {/* Background Image */}
                 {image ? (
-                    <img
+                    <Image
                         src={image}
                         alt={title}
+                        fill
+                        sizes="16rem"
                         className="absolute inset-0 w-full h-full object-cover rounded-full"
                     />
                 ) : (
@@ -45,7 +49,7 @@ function GameCard({ title, genres, image }: GameCardProps) {
                             key={index}
                             className="text-xs bg-white/20 text-white px-2 py-1 rounded-full backdrop-blur-sm"
                         >
-                            {genre}
+                            {formatGenreLabel(genre)}
                         </span>
                     ))}
                 </div>

@@ -3,6 +3,7 @@ This component displays a user review card.
 It shows a small circular profile picture next to the user's name,
 and underneath it displays the user's written review.
 */
+import Image from "next/image";
 
 type UserReviewProps = {
   name: string;
@@ -23,11 +24,15 @@ function UserReview({ name, review, image }: UserReviewProps) {
       
       {/* User Image */}
       {image ? (
-        <img
-          src={image}
-          alt={name}
-          className="w-12 h-12 rounded-full object-cover"
-        />
+        <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
+          <Image
+            src={image}
+            alt={name}
+            fill
+            sizes="48px"
+            className="object-cover"
+          />
+        </span>
       ) : (
         <div
           aria-label={name}

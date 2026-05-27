@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 /*
 This component displays a background image with reduced opacity
 and a centered text overlay on top of it.
@@ -12,9 +14,11 @@ function ImageOverlayCard({ image, text }: ImageOverlayCardProps) {
     <div className="relative w-full h-100 rounded-xl overflow-hidden flex items-center justify-center text-center">
       
       {/* Background Image */}
-      <img
+      <Image
         src={image}
         alt={text}
+        fill
+        sizes="100vw"
         className="absolute inset-0 w-full h-full object-cover opacity-40"
       />
 

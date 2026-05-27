@@ -179,6 +179,15 @@ textarea {
     font: inherit;
 }
 
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
 .reg-text-s {
     font-size: 10px;
     font-weight: 200;

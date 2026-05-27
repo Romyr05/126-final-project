@@ -37,6 +37,40 @@ def get_my_reviews(auth: AuthContext = Depends(get_auth_context)):
     return response.data
 
 
+@router.get("/recent")
+def get_recent_reviews(limit: int = 4):
+    safe_limit = min(max(limit, 1), 12)
+
+    response = (
+        supabase_public.table("reviews")
+        .select(
+            """
+            review_id,
+            rating,
+            review_text,
+            date_updated,
+            users(username),
+            games(game_id,title,cover_image)
+            """
+        )
+        .order("date_updated", desc=True)
+        .limit(safe_limit)
+        .execute()
+    )
+
+    return [
+        {
+            "review_id": row["review_id"],
+            "rating": row["rating"],
+            "review_text": row["review_text"],
+            "date_updated": row["date_updated"],
+            "user": row.get("users"),
+            "game": row.get("games"),
+        }
+        for row in response.data or []
+    ]
+
+
 @router.get("/{game_id}")
 def get_my_review_for_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
     user_id = str(auth.user.id)
