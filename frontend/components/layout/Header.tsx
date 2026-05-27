@@ -69,9 +69,9 @@ return(
                 </Link>
 
             <nav className="flex items-center gap-8 justify-self-center">
+                <Link href = "/landingPage" className="hover:!text-[var(--vault-purple)]">Home</Link>
                 <Link href = "/catalog" className="hover:!text-[var(--vault-purple)]">Catalog</Link>
                 <Link href = "/Journal" className="hover:!text-[var(--vault-purple)]">Journal</Link>
-                <Link href = "/landingPage" className="hover:!text-[var(--vault-purple)]">Feed</Link>
             </nav>
             
                 <Link

@@ -3,26 +3,40 @@
 import { useEffect, useState } from "react";
 import ProfileSummary from "@/components/profile/profileSummary";
 import ProfileFavorites from "@/components/profile/profileFavorites";
+import ProfileRecommendations from "@/components/profile/profileRecommendations";
 import ProfileRecentReviews from "@/components/profile/profileRecentReviews";
 import type { ProfileResponse } from "@/lib/types/profile";
 import { request } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 
 
 
 export default function Page() {
+    const router = useRouter();
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
     const [error, setError] = useState("");
 
     useEffect(() => {
+        let active = true;
+
         request<ProfileResponse>("/profiles/me")
             .then((data) => {
-                setProfile(data);
+                if (active) {
+                    setProfile(data);
+                }
             })
             .catch((error) => {
-                setError(error.message);
+                if (active) {
+                    setError(error instanceof Error ? error.message : "Unable to load profile.");
+                    router.replace("/login");
+                }
             });
-    }, []);
+
+        return () => {
+            active = false;
+        };
+    }, [router]);
 
     return (
         <div className="min-h-screen bg-[var(--vault-bg)]">
@@ -40,6 +54,7 @@ export default function Page() {
                 {profile && (
                     <>
                         <ProfileSummary user={profile.user} stats={profile.stats} />
+                        <ProfileRecommendations />
                         <ProfileFavorites favorites={profile.favorites} />
                         <ProfileRecentReviews reviews={profile.recent_reviews} />
                     </>
