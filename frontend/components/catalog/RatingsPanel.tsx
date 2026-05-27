@@ -4,7 +4,7 @@ like/dislike count of the game
 */
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHeart, faStar } from '@fortawesome/free-regular-svg-icons'
+import { faHeart, faStar } from '@fortawesome/free-solid-svg-icons'
 
 type Data = {
     userRating : string,

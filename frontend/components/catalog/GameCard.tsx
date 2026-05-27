@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import GenreTag from "./GenreTag";
 import RatingsPanel from "./RatingsPanel";
 import { ReactNode } from "react";
-import { faCalendar } from "@fortawesome/free-regular-svg-icons";
+import { faCalendar } from "@fortawesome/free-solid-svg-icons";
 
 type CardData = {
     title : string,
