@@ -9,6 +9,8 @@ const frontendDir = process.cwd();
 const repoRoot = path.dirname(frontendDir);
 const frontendNextDir = path.join(frontendDir, ".next");
 const rootNextDir = path.join(repoRoot, ".next");
+const frontendNextPackageDir = path.join(frontendDir, "node_modules", "next");
+const rootNextPackageDir = path.join(repoRoot, "node_modules", "next");
 const routesManifest = path.join(frontendNextDir, "routes-manifest.json");
 const deterministicRoutesManifest = path.join(
   frontendNextDir,
@@ -41,4 +43,23 @@ const rootDeterministicRoutesManifest = path.join(
 
 if (!existsSync(rootDeterministicRoutesManifest)) {
   copyFileSync(deterministicRoutesManifest, rootDeterministicRoutesManifest);
+}
+
+if (existsSync(frontendNextPackageDir) && !existsSync(rootNextPackageDir)) {
+  mkdirSync(path.dirname(rootNextPackageDir), { recursive: true });
+
+  try {
+    symlinkSync(frontendNextPackageDir, rootNextPackageDir, "dir");
+  } catch {
+    const adapterFile = path.join(
+      "dist",
+      "build",
+      "adapter",
+      "setup-node-env.external.js",
+    );
+    const rootAdapterFile = path.join(rootNextPackageDir, adapterFile);
+
+    mkdirSync(path.dirname(rootAdapterFile), { recursive: true });
+    copyFileSync(path.join(frontendNextPackageDir, adapterFile), rootAdapterFile);
+  }
 }
