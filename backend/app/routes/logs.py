@@ -14,8 +14,14 @@ router = APIRouter(prefix ="/logs", tags = ["Logs"])
 @router.get("")
 def get_user_log(auth: AuthContext = Depends(get_auth_context)):
     user_id = str(auth.user.id)
-    response = auth.supabase.table("game_logs").select("*").eq("user_id", user_id).execute()
-    return first_row(response, "Game log not found", 404)
+    response = (
+        auth.supabase.table("game_logs")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("updated_at", desc=True)
+        .execute()
+    )
+    return response.data or []
 
 @router.get("/status/{status}")
 def get_game_by_status(status: str, auth: AuthContext = Depends(get_auth_context)):

@@ -1,21 +1,37 @@
 "use client"
 
-import { useState } from "react"
-import { request, searchGames } from "@/lib/api"
+import { useEffect, useState } from "react"
+import { getGame, request, searchGames } from "@/lib/api"
+import Image from "next/image"
 
 type Game = {
   game_id: string
   title: string
+  cover_image: string | null
 }
 
 type Status = "played" | "playing" | "completed" | "dropped" | "wishlist"
 const statuses: Status[] = ["played", "playing", "completed", "dropped", "wishlist"]
 
-type Props = {
-  onSuccess: () => void
+function getCoverImageSrc(coverImage: string | null) {
+  if (!coverImage) {
+    return "/images/dummyGameImg.png"
+  }
+
+  if (coverImage.startsWith("//")) {
+    return `https:${coverImage}`
+  }
+
+  return coverImage
 }
 
-export default function JournalEntryForm({ onSuccess }: Props) {
+type Props = {
+  initialGameId?: string | null
+  onSuccess: () => void
+  onCancel?: () => void
+}
+
+export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }: Props) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<Game[]>([])
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
@@ -24,18 +40,61 @@ export default function JournalEntryForm({ onSuccess }: Props) {
   const [reviewText, setReviewText] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [prefillLoading, setPrefillLoading] = useState(false)
+
+  useEffect(() => {
+    if (!initialGameId) {
+      return
+    }
+
+    const gameId = initialGameId
+    let active = true
+
+    async function prefillGame() {
+      setPrefillLoading(true)
+      setError("")
+
+      try {
+        const game = await getGame<Game>(gameId)
+
+        if (active) {
+          setSelectedGame(game)
+          setQuery(game.title)
+          setResults([])
+        }
+      } catch {
+        if (active) {
+          setError("Could not prefill that game. Search for it instead.")
+        }
+      } finally {
+        if (active) {
+          setPrefillLoading(false)
+        }
+      }
+    }
+
+    prefillGame()
+
+    return () => {
+      active = false
+    }
+  }, [initialGameId])
 
   async function handleSearch(value: string) {
-  setQuery(value)
-  setSelectedGame(null)
-  if (value.length < 2) return setResults([])
-  try {
-    const res = await searchGames<{ count: number; games: Game[] }>(value)
-    setResults(res.games)
-  } catch {
-    setResults([])
+    setQuery(value)
+    setSelectedGame(null)
+
+    if (value.length < 2) {
+      return setResults([])
+    }
+
+    try {
+      const res = await searchGames<{ count: number; games: Game[] }>(value)
+      setResults(res.games)
+    } catch {
+      setResults([])
+    }
   }
-}
 
   async function handleSubmit() {
     if (!selectedGame || !status) return
@@ -50,14 +109,33 @@ export default function JournalEntryForm({ onSuccess }: Props) {
 
       // post review if rating provided
       if (rating) {
-        await request("/reviews", {
-          method: "POST",
-          body: JSON.stringify({
-            game_id: selectedGame.game_id,
-            rating,
-            review_text: reviewText || null,
-          }),
-        })
+        const reviewPayload = {
+          game_id: selectedGame.game_id,
+          rating,
+          review_text: reviewText || null,
+        }
+
+        try {
+          await request("/reviews", {
+            method: "POST",
+            body: JSON.stringify(reviewPayload),
+          })
+        } catch (reviewError) {
+          if (
+            reviewError instanceof Error &&
+            reviewError.message === "Review already exists"
+          ) {
+            await request(`/reviews/${selectedGame.game_id}`, {
+              method: "PATCH",
+              body: JSON.stringify({
+                rating,
+                review_text: reviewText || null,
+              }),
+            })
+          } else {
+            throw reviewError
+          }
+        }
       }
 
       onSuccess()
@@ -75,48 +153,91 @@ export default function JournalEntryForm({ onSuccess }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6 rounded-xl bg-white/5 border border-white/10 mb-8">
-      <h2 className="text-white font-semibold text-lg">Log a Game</h2>
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-xl font-bold text-[var(--vault-text)]">Log a Game</h2>
+        <p className="mt-1 text-sm text-[var(--vault-muted)]">
+          Add a game to your journal and leave a rating or review.
+        </p>
+      </div>
 
-      {/* Game search */}
+      {prefillLoading && (
+        <p className="text-sm text-[var(--vault-muted)]">Loading selected game...</p>
+      )}
+
       <div className="relative">
+        <label className="mb-2 block text-sm font-semibold text-[var(--vault-muted)]">
+          Game
+        </label>
         <input
           type="text"
           placeholder="Search for a game..."
           value={selectedGame ? selectedGame.title : query}
           onChange={(e) => handleSearch(e.target.value)}
-          className="w-full bg-white/10 text-white placeholder-white/40 px-4 py-2 rounded-lg outline-none border border-white/10 focus:border-white/30"
+          className="h-11 w-full rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] px-4 text-[var(--vault-text)] outline-none transition placeholder:text-[var(--vault-muted-strong)] focus:border-[var(--vault-purple)] focus:ring-1 focus:ring-[var(--vault-purple)]"
         />
         {results.length > 0 && !selectedGame && (
-          <div className="absolute top-full left-0 right-0 bg-[#1a1a2e] border border-white/10 rounded-lg mt-1 z-10 max-h-48 overflow-y-auto">
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] shadow-[var(--vault-shadow)]">
             {results.map((game) => (
               <button
+                type="button"
                 key={game.game_id}
                 onClick={() => {
                   setSelectedGame(game)
                   setResults([])
                 }}
-                className="w-full text-left px-4 py-2 text-white/80 hover:bg-white/10 text-sm"
+                className="grid w-full grid-cols-[2.5rem_1fr] items-center gap-3 px-4 py-2 text-left text-sm text-[var(--vault-muted)] transition hover:bg-[var(--vault-bg-soft)] hover:text-[var(--vault-text)]"
               >
-                {game.title}
+                <span className="relative aspect-[3/4] overflow-hidden rounded-sm border border-[var(--vault-border)] bg-[var(--vault-bg-soft)]">
+                  <Image
+                    src={getCoverImageSrc(game.cover_image)}
+                    alt={`${game.title} cover`}
+                    fill
+                    sizes="40px"
+                    className="object-cover object-top"
+                  />
+                </span>
+                <span className="truncate">{game.title}</span>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Status */}
+      {selectedGame ? (
+        <div className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] p-3">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]">
+            <Image
+              src={getCoverImageSrc(selectedGame.cover_image)}
+              alt={`${selectedGame.title} cover`}
+              fill
+              sizes="72px"
+              className="object-cover object-top"
+            />
+          </div>
+          <div className="flex min-w-0 flex-col justify-center">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--vault-muted-strong)]">
+              Selected game
+            </p>
+            <p className="line-clamp-2 break-words text-sm font-bold text-[var(--vault-text)]">
+              {selectedGame.title}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div>
-        <p className="text-white/50 text-sm mb-2">Status</p>
+        <p className="mb-2 text-sm font-semibold text-[var(--vault-muted)]">Status</p>
         <div className="flex flex-wrap gap-2">
           {statuses.map((s) => (
             <button
+              type="button"
               key={s}
               onClick={() => setStatus(s)}
-              className={`px-3 py-1 rounded-full text-sm border transition ${
+              className={`rounded-full border px-3 py-1 text-sm font-semibold capitalize transition ${
                 status === s
-                  ? "bg-yellow-400 text-black border-yellow-400"
-                  : "border-white/20 text-white/60 hover:border-white/40"
+                  ? "border-[var(--vault-purple)] bg-[var(--vault-surface-raised)] text-[var(--vault-purple)]"
+                  : "border-[var(--vault-border-strong)] text-[var(--vault-muted)] hover:border-[var(--vault-purple)] hover:text-[var(--vault-text)]"
               }`}
             >
               {s}
@@ -125,16 +246,18 @@ export default function JournalEntryForm({ onSuccess }: Props) {
         </div>
       </div>
 
-      {/* Rating */}
       <div>
-        <p className="text-white/50 text-sm mb-2">Rating (optional)</p>
+        <p className="mb-2 text-sm font-semibold text-[var(--vault-muted)]">Rating (optional)</p>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
+              type="button"
               key={star}
               onClick={() => setRating(star)}
               className={`text-2xl transition ${
-                rating && star <= rating ? "text-yellow-400" : "text-white/20"
+                rating && star <= rating
+                  ? "text-[var(--vault-purple)]"
+                  : "text-[var(--vault-muted-strong)] hover:text-[var(--vault-muted)]"
               }`}
             >
               ★
@@ -143,27 +266,39 @@ export default function JournalEntryForm({ onSuccess }: Props) {
         </div>
       </div>
 
-      {/* Review text */}
       <div>
-        <p className="text-white/50 text-sm mb-2">Review (optional)</p>
+        <p className="mb-2 text-sm font-semibold text-[var(--vault-muted)]">Review (optional)</p>
         <textarea
           placeholder="Write your thoughts..."
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
           rows={3}
-          className="w-full bg-white/10 text-white placeholder-white/40 px-4 py-2 rounded-lg outline-none border border-white/10 focus:border-white/30 resize-none"
+          className="w-full resize-none rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] px-4 py-3 text-[var(--vault-text)] outline-none transition placeholder:text-[var(--vault-muted-strong)] focus:border-[var(--vault-purple)] focus:ring-1 focus:ring-[var(--vault-purple)]"
         />
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-sm text-[var(--vault-danger)]">{error}</p>}
 
-      <button
-        onClick={handleSubmit}
-        disabled={!selectedGame || !status || loading}
-        className="bg-yellow-400 text-black font-semibold px-4 py-2 rounded-full w-fit hover:bg-yellow-300 transition disabled:opacity-40"
-      >
-        {loading ? "Saving..." : "Log Game"}
-      </button>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md border border-[var(--vault-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--vault-muted)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-text)]"
+          >
+            Cancel
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!selectedGame || !status || loading}
+          className="rounded-md bg-[var(--vault-purple)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {loading ? "Saving..." : "Log Game"}
+        </button>
+      </div>
     </div>
   )
 }

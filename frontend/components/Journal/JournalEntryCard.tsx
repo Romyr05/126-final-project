@@ -14,29 +14,52 @@ const statusColors: Record<GameLogWithDetails["status"], string> = {
 }
 
 export default function JournalEntryCard({ entry }: Props) {
+  const loggedDate = entry.updated_at ?? entry.date_logged
+
   return (
-    <div className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-      <Image
-        src={entry.cover_image ?? "/images/dummyGameImg.png"}
-        alt={entry.title}
-        width={60}
-        height={80}
-        className="rounded-lg object-cover shrink-0"
-      />
-      <div className="flex flex-col gap-1 justify-center">
-        <h2 className="text-white font-semibold">{entry.title}</h2>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${statusColors[entry.status]}`}>
+    <article className="group overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--vault-purple)]">
+      <div className="relative aspect-[3/4] bg-[var(--vault-bg-soft)]">
+        <Image
+          src={entry.cover_image ?? "/images/dummyGameImg.png"}
+          alt={`${entry.title} cover`}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 25vw"
+          className="object-cover transition duration-300 group-hover:scale-105"
+        />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--vault-surface)] to-transparent" />
+        <span className={`absolute right-2 top-2 rounded-sm px-2 py-1 text-[10px] font-black uppercase tracking-wide ${statusColors[entry.status]}`}>
           {entry.status}
         </span>
-        {entry.rating && (
-          <p className="text-yellow-400 text-sm">
-            {"★".repeat(entry.rating)}{"☆".repeat(5 - entry.rating)}
-          </p>
-        )}
-        {entry.review_text && (
-          <p className="text-white/50 text-sm">{entry.review_text}</p>
-        )}
       </div>
-    </div>
+
+      <div className="space-y-2 p-3">
+        <h2 className="line-clamp-2 min-h-10 text-sm font-bold leading-tight text-[var(--vault-text)]">
+          {entry.title}
+        </h2>
+
+        <div className="flex min-h-5 items-center justify-between gap-2 text-xs">
+          {entry.rating ? (
+            <span className="text-[var(--vault-purple)]">
+              {"★".repeat(entry.rating)}{"☆".repeat(5 - entry.rating)}
+            </span>
+          ) : (
+            <span className="text-[var(--vault-muted-strong)]">No rating yet</span>
+          )}
+
+          {loggedDate ? (
+            <time className="shrink-0 text-[10px] text-[var(--vault-muted-strong)]">
+              {formatShortDate(loggedDate)}
+            </time>
+          ) : null}
+        </div>
+      </div>
+    </article>
   )
+}
+
+function formatShortDate(date: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(date))
 }

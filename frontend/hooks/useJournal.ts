@@ -1,8 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getLogs, getGame, getMyReview } from "@/lib/api"
-import type { GameLog, GameLogWithDetails } from "@/types/journal"
+import { getLogs, getGame, getMyReview, getMyReviews } from "@/lib/api"
+import type {
+  GameLog,
+  GameLogWithDetails,
+  JournalReview,
+  JournalReviewWithGame,
+} from "@/types/journal"
 
 type GameDetail = {
   game_id: string
@@ -15,7 +20,7 @@ type Review = {
   review_text: string | null
 }
 
-async function fetchJournalData(): Promise<GameLogWithDetails[]> {
+async function fetchJournalEntries(): Promise<GameLogWithDetails[]> {
   const logs = await getLogs<GameLog[]>()
 
   return Promise.all(
@@ -40,6 +45,8 @@ async function fetchJournalData(): Promise<GameLogWithDetails[]> {
           cover_image: game.cover_image,
           rating,
           review_text,
+          date_logged: log.date_logged,
+          updated_at: log.updated_at,
         }
       } catch {
         return {
@@ -49,25 +56,57 @@ async function fetchJournalData(): Promise<GameLogWithDetails[]> {
           cover_image: null,
           rating: null,
           review_text: null,
+          date_logged: log.date_logged,
+          updated_at: log.updated_at,
         }
       }
     })
   )
 }
 
-export function useJournal() {
+async function fetchJournalReviews(): Promise<JournalReviewWithGame[]> {
+  const reviews = await getMyReviews<JournalReview[]>()
+
+  return Promise.all(
+    reviews.map(async (review) => {
+      try {
+        const game = await getGame<GameDetail>(review.game_id)
+
+        return {
+          ...review,
+          title: game.title,
+          cover_image: game.cover_image,
+        }
+      } catch {
+        return {
+          ...review,
+          title: "Unknown Game",
+          cover_image: null,
+        }
+      }
+    })
+  )
+}
+
+export function useJournal(enabled: boolean = true) {
   const [entries, setEntries] = useState<GameLogWithDetails[]>([])
+  const [reviews, setReviews] = useState<JournalReviewWithGame[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
+    if (!enabled) {
+      return
+    }
+
     let cancelled = false
 
-    fetchJournalData()
-      .then((data) => {
+    Promise.all([fetchJournalEntries(), fetchJournalReviews()])
+      .then(([entryData, reviewData]) => {
         if (!cancelled) {
-          setEntries(data)
+          setEntries(entryData)
+          setReviews(reviewData)
           setLoading(false)
         }
       })
@@ -81,11 +120,11 @@ export function useJournal() {
     return () => {
       cancelled = true
     }
-  }, [refreshKey])
+  }, [enabled, refreshKey])
 
   function refresh() {
     setRefreshKey((k) => k + 1)
   }
 
-  return { entries, loading, error, refresh }
+  return { entries, reviews, loading, error, refresh }
 }
