@@ -25,12 +25,13 @@ type Data = {
 export default function GameCardCatalog(data : Data) {
     let filteredGames : Game[] = data.games;
 
-    if (data.searchQuery != '') {
-        filteredGames =
-            filteredGames.filter((g : Game) =>
-                g.title.includes(data.searchQuery)
-            );
-    }
+    // if (data.searchQuery != '') {
+    //     filteredGames =
+    //         filteredGames.filter((g : Game) => {
+    //             let formattedQuery = data.searchQuery.toLowerCase().trim();
+    //             return g.title.toLowerCase().includes(formattedQuery);
+    //         });
+    // }
 
 
     return (

@@ -20,22 +20,56 @@ import Searchbar from "@/components/catalog/Searchbar";
 import type { Game } from "./page";
 import FilterPanel from "@/components/catalog/FilterPanel";
 import GameCardCatalog from "@/components/catalog/GameCardCatalog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getGames, searchGames } from "@/lib/api";
 
 let searchQuery : string = "";
 let searchedGenres : string[] = [];
-let allGames : Game[] = [];
-let limit : number = 40;
-let offset : number = 0;
+let games : Game[] = [];
+let limit : number;
+let page : number = 0;
 
 type Data = {
+    games : Game[],
+    init_limit : number,
+    init_offset : number,
+}
+
+type SearchGamesRes = {
+    query : string,
+    count : number,
     games : Game[]
 }
 
+type GetGamesRes = {
+    count: number,
+    games: Game[],
+};
+
 export default function CatalogClient(data : Data) {
-    allGames = data.games;
+    limit = data.init_limit;
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [games, setGames] = useState<Game[]>([]);
+    const [page, setPage] = useState(1);
+
+    // useEffect triggers whenever something is changed in the
+    // dependency array (which in this case is either searchQuery/page)
+    useEffect(() => {
+        async function loadGames() {
+            if (searchQuery != "") {
+                const data = await searchGames<SearchGamesRes>(searchQuery);
+                console.log(data);
+                setGames(data.games);
+            } else {
+                const data = await getGames<GetGamesRes>(limit, page * limit);
+                setGames(data.games);
+            }
+        }
+        loadGames();
+
+        console.log(games);
+    }, [searchQuery, page]);
 
     return (
         <main className="min-h-screen px-6 py-8">
@@ -73,7 +107,7 @@ export default function CatalogClient(data : Data) {
                 <div className="w-2/3">
                     <div className="rounded-lg border p-4">
                         <GameCardCatalog
-                            games={allGames}
+                            games={games}
                             searchQuery={searchQuery}
                             includedGenres={searchedGenres}
                         />
@@ -92,4 +126,12 @@ function setSearchQuery(newQuery : string) {
 
 function setSearchedGenres(newSet : string[]) {
     searchedGenres = newSet;
+}
+
+function setPage(newPage : number) {
+    page = newPage;
+}
+
+function setGames(newGames : Game[]) {
+    games = newGames;
 }

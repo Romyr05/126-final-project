@@ -18,7 +18,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T>{
 
   if (!response.ok) {
     // with fall back if no
-    throw new Error(data?.detail ?? `API request failed: ${response.status}`)
+    throw new Error(data?.detail?.msg ?? `API request failed: ${response.status}`)
   }
 
   return data as T;

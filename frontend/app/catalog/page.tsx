@@ -16,8 +16,8 @@ export type Game = {
     slug : string | null
 };
 
-const limit = 40;
-const offset = 99;
+const limit = 36;
+const offset = 0;
 
 
 // Made this since Game[] is alraedy an array and wala . property ang array
@@ -27,13 +27,21 @@ type gameOutput = {
 };
 
 export default async function CatalogPage() {
-    const fetched = await getGames<gameOutput>(limit, offset);
-    const allGames = fetched.games;
+    /*
+    before we render the CatalogClient, we essentially do a server-side
+    preload of important variables (note how page.tsx is server-side
+    while pageclient.tsx is client-side)
+    */
+
+    const res = await getGames<gameOutput>(limit, offset);
+    const allGames = res.games;
 
     return (
         <div>
             <CatalogClient
                 games={allGames}
+                init_limit={limit}
+                init_offset={offset}
             />
         </div>
     );
