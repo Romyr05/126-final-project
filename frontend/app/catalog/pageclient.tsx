@@ -3,7 +3,7 @@
 import type { Game, Genre } from "./page";
 import GameCardCatalog from "@/components/catalog/GameCardCatalog";
 import { useEffect, useState } from "react";
-import { getGames } from "@/lib/api";
+import { getGames, getRecommendations } from "@/lib/api";
 
 type Data = {
     games : Game[],
@@ -16,6 +16,18 @@ type Data = {
 type GetGamesRes = {
     count: number,
     games: Game[],
+};
+
+type RecommendationGame = Game & {
+    score?: number,
+    matched_genres?: string[],
+    matched_tags?: string[],
+    game_genres?: { genres?: { name?: string } | null }[],
+};
+
+type RecommendationsRes = {
+    count: number,
+    recommendations: RecommendationGame[],
 };
 
 type SortOption = "popularity" | "rating" | "newest" | "title";
@@ -52,6 +64,38 @@ function getVisiblePages(currentPage : number, totalPages : number) {
     );
 }
 
+function getDisplayRating(userRating : number | null, websiteRating : number | null) {
+    const rating = userRating && userRating > 0
+        ? userRating
+        : websiteRating
+            ? websiteRating / 10
+            : null;
+
+    return rating === null ? "N/A" : rating.toFixed(1);
+}
+
+function getFallbackRecommendations(games : Game[]) {
+    return games
+        .slice()
+        .sort((firstGame, secondGame) => {
+            const firstRating = firstGame.avg_user_rating ?? (firstGame.external_rating ?? 0) / 10;
+            const secondRating = secondGame.avg_user_rating ?? (secondGame.external_rating ?? 0) / 10;
+
+            return secondRating - firstRating;
+        })
+        .slice(0, 6);
+}
+
+function getRecommendationGenres(game : RecommendationGame) {
+    if (game.genres?.length) {
+        return game.genres;
+    }
+
+    return game.game_genres
+        ?.map((genreRow) => genreRow.genres?.name)
+        .filter((genreName): genreName is string => Boolean(genreName)) ?? [];
+}
+
 export default function CatalogClient(props : Data) {
     const limit = props.init_limit;
 
@@ -65,6 +109,50 @@ export default function CatalogClient(props : Data) {
     const [totalCount, setTotalCount] = useState(props.initial_count);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [recommendations, setRecommendations] = useState<RecommendationGame[]>(
+        getFallbackRecommendations(props.games)
+    );
+    const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+    const [recommendationMode, setRecommendationMode] = useState<"personalized" | "popular">("popular");
+
+    useEffect(() => {
+        let active = true;
+
+        async function loadRecommendations() {
+            setRecommendationsLoading(true);
+
+            try {
+                const data = await getRecommendations<RecommendationsRes>(6);
+
+                if (!active) {
+                    return;
+                }
+
+                if (data.recommendations.length > 0) {
+                    setRecommendations(data.recommendations);
+                    setRecommendationMode("personalized");
+                } else {
+                    setRecommendations(getFallbackRecommendations(props.games));
+                    setRecommendationMode("popular");
+                }
+            } catch {
+                if (active) {
+                    setRecommendations(getFallbackRecommendations(props.games));
+                    setRecommendationMode("popular");
+                }
+            } finally {
+                if (active) {
+                    setRecommendationsLoading(false);
+                }
+            }
+        }
+
+        loadRecommendations();
+
+        return () => {
+            active = false;
+        };
+    }, [props.games]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -128,6 +216,8 @@ export default function CatalogClient(props : Data) {
     }
 
     function goToPage(page : number) {
+        if (loading) return;
+
         const nextPage = Math.min(Math.max(page, 1), totalPages);
 
         setQuery((currentQuery) => ({
@@ -144,6 +234,91 @@ export default function CatalogClient(props : Data) {
                         Game Catalog
                     </h1>
                 </div>
+
+                <section className="mb-8 border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] p-4 shadow-sm sm:p-5">
+                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 className="text-lg font-bold tracking-tight text-[var(--vault-text)]">
+                                Recommended for You
+                            </h2>
+                            <p className="text-sm text-[var(--vault-muted)]">
+                                {recommendationMode === "personalized"
+                                    ? "Based on your ratings, favorites, logs, and genre matches."
+                                    : "Top picks while your profile is still getting enough activity."}
+                            </p>
+                        </div>
+
+                        <span className="w-fit rounded-md border border-[var(--vault-border-strong)] bg-[var(--vault-surface)] px-3 py-1 text-xs font-semibold text-[var(--vault-green)]">
+                            {recommendationMode === "personalized" ? "Personalized" : "Popular picks"}
+                        </span>
+                    </div>
+
+                    {recommendationsLoading ? (
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <div
+                                    key={index}
+                                    className="h-32 animate-pulse rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]"
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {recommendations.map((game) => {
+                                const genres = getRecommendationGenres(game).slice(0, 2);
+
+                                return (
+                                    <article
+                                        key={game.game_id}
+                                        className="grid min-h-32 grid-cols-[5rem_1fr] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] transition hover:-translate-y-0.5 hover:border-[var(--vault-purple)]"
+                                    >
+                                        <div
+                                            className="bg-cover bg-center bg-no-repeat"
+                                            style={{
+                                                backgroundImage: game.cover_image
+                                                    ? `url(${game.cover_image})`
+                                                    : "linear-gradient(160deg, var(--vault-surface-raised), var(--vault-bg-soft))",
+                                            }}
+                                            aria-hidden="true"
+                                        />
+
+                                        <div className="flex min-w-0 flex-col justify-between gap-3 p-3">
+                                            <div className="min-w-0">
+                                                <div className="mb-1 flex items-center gap-2 text-xs font-bold text-[var(--vault-green)]">
+                                                    <span>{getDisplayRating(game.avg_user_rating, game.external_rating)}</span>
+                                                    {game.score ? (
+                                                        <span className="text-[var(--vault-muted-strong)]">
+                                                            Match {game.score.toFixed(1)}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+
+                                                <h3 className="line-clamp-2 break-words text-sm font-bold leading-tight text-[var(--vault-text)] [overflow-wrap:anywhere]">
+                                                    {game.title}
+                                                </h3>
+                                            </div>
+
+                                            <div className="flex min-h-5 flex-wrap gap-2">
+                                                {genres.length > 0 ? genres.map((genre) => (
+                                                    <span
+                                                        key={genre}
+                                                        className="rounded-sm bg-[var(--vault-bg-soft)] px-2 py-1 text-xs font-medium text-[var(--vault-muted)]"
+                                                    >
+                                                        {formatGenre(genre)}
+                                                    </span>
+                                                )) : (
+                                                    <span className="text-xs text-[var(--vault-muted-strong)]">
+                                                        Recommended pick
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
 
                 <div className="mb-7 flex flex-col gap-3 border-b border-[var(--vault-border)] pb-3 lg:flex-row lg:items-center lg:justify-between">
                     <label className="relative block w-full lg:max-w-xl">
@@ -248,7 +423,7 @@ export default function CatalogClient(props : Data) {
                                     <button
                                         type="button"
                                         onClick={() => goToPage(currentPage - 1)}
-                                        disabled={loading || currentPage === 1}
+                                        disabled={currentPage === 1}
                                         className="rounded-md border border-[var(--vault-border-strong)] bg-[var(--vault-surface)] px-3 py-2 text-sm font-semibold text-[var(--vault-text)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-purple)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         Previous
@@ -274,7 +449,7 @@ export default function CatalogClient(props : Data) {
                                     <button
                                         type="button"
                                         onClick={() => goToPage(currentPage + 1)}
-                                        disabled={loading || currentPage === totalPages}
+                                        disabled={currentPage === totalPages}
                                         className="rounded-md border border-[var(--vault-border-strong)] bg-[var(--vault-surface)] px-3 py-2 text-sm font-semibold text-[var(--vault-text)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-purple)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         Next
