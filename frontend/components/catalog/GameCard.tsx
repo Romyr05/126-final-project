@@ -7,22 +7,47 @@ differs in format from the landing page gamecards
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar } from "@fortawesome/free-solid-svg-icons";
+import Image from "next/image";
+import Link from "next/link";
+import { formatGenreLabel } from "@/lib/formatGenre";
 
 type CardData = {
     title : string,
+    coverImage : string | null,
     genres : string[],
     userRating : number | null,
     websiteRating : number | null,
+    slug : string | null,
 };
+
+function getCoverImageSrc(coverImage : string | null) {
+    if (!coverImage) {
+        return "/images/dummyGameImg.png";
+    }
+
+    if (coverImage.startsWith("//")) {
+        return `https:${coverImage}`;
+    }
+
+    return coverImage;
+}
 
 export default function GameCard(data : CardData) {
     const rating = getDisplayRating(data.userRating, data.websiteRating);
     const titleSizeClass = getTitleSizeClass(data.title);
     const visibleGenres = data.genres.slice(0, 2);
+    const coverImage = getCoverImageSrc(data.coverImage);
 
-    return (
+    const card = (
         <article className="group relative flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--vault-purple)]">
-            <div className="relative min-h-0 flex-1 bg-[linear-gradient(180deg,var(--vault-surface),var(--vault-bg-soft))]">
+            <div className="relative min-h-0 flex-1 overflow-hidden bg-[linear-gradient(180deg,var(--vault-surface),var(--vault-bg-soft))]">
+                <Image
+                    src={coverImage}
+                    alt={`${data.title} cover`}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 20vw"
+                    className="object-cover object-top transition duration-300 group-hover:scale-105"
+                />
                 <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[var(--vault-surface)] to-transparent" />
             </div>
 
@@ -42,12 +67,24 @@ export default function GameCard(data : CardData) {
                             key={genre}
                             className="truncate text-xs font-medium text-[var(--vault-muted)]"
                         >
-                            {genre}
+                            {formatGenreLabel(genre)}
                         </span>
                     ))}
                 </div>
             </div>
+
+            <div className="pointer-events-none absolute inset-0 rounded-md border border-transparent transition group-hover:border-[var(--vault-purple)]" />
         </article>
+    );
+
+    if (!data.slug) {
+        return card;
+    }
+
+    return (
+        <Link href={`/catalog/${data.slug}`} className="block h-full focus:outline-none focus:ring-2 focus:ring-[var(--vault-purple)] focus:ring-offset-2 focus:ring-offset-[var(--vault-bg)]">
+            {card}
+        </Link>
     );
 }
 

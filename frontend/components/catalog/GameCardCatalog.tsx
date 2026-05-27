@@ -48,9 +48,11 @@ export default function GameCardCatalog(data : Data) {
                 <GameCard 
                     key={game.game_id}
                     title={game.title}
+                    coverImage={game.cover_image}
                     genres={game.genres}
                     userRating={game.avg_user_rating}
                     websiteRating={game.external_rating}
+                    slug={game.slug}
                 />
             ))}
         </div>

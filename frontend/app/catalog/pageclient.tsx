@@ -2,8 +2,11 @@
 
 import type { Game, Genre } from "./page";
 import GameCardCatalog from "@/components/catalog/GameCardCatalog";
-import { useEffect, useState } from "react";
-import { getGames, getRecommendations } from "@/lib/api";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { getGames, getRecommendations, request } from "@/lib/api";
+import type { AuthUser } from "@/lib/auth";
+import { formatGenreLabel } from "@/lib/formatGenre";
+import Link from "next/link";
 
 type Data = {
     games : Game[],
@@ -45,13 +48,6 @@ const sortOptions : { label : string, value : SortOption }[] = [
     { label: "Newest", value: "newest" },
     { label: "Title", value: "title" },
 ];
-
-function formatGenre(name : string) {
-    return name
-        .split(" ")
-        .map((word) => word ? word[0].toUpperCase() + word.slice(1) : word)
-        .join(" ");
-}
 
 function getVisiblePages(currentPage : number, totalPages : number) {
     const start = Math.max(1, currentPage - 2);
@@ -96,9 +92,18 @@ function getRecommendationGenres(game : RecommendationGame) {
         .filter((genreName): genreName is string => Boolean(genreName)) ?? [];
 }
 
+const subscribeToHydration = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function CatalogClient(props : Data) {
     const limit = props.init_limit;
 
+    const hydrated = useSyncExternalStore(
+        subscribeToHydration,
+        getClientSnapshot,
+        getServerSnapshot
+    );
     const [query, setQuery] = useState<CatalogQuery>({
         search: "",
         genres: [],
@@ -114,8 +119,34 @@ export default function CatalogClient(props : Data) {
     );
     const [recommendationsLoading, setRecommendationsLoading] = useState(true);
     const [recommendationMode, setRecommendationMode] = useState<"personalized" | "popular">("popular");
+    const [userLoggedIn, setUserLoggedIn] = useState(false);
 
     useEffect(() => {
+        let active = true;
+
+        request<AuthUser>("/auth/me")
+            .then(() => {
+                if (active) {
+                    setUserLoggedIn(true);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setUserLoggedIn(false);
+                    setRecommendationsLoading(false);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!userLoggedIn) {
+            return;
+        }
+
         let active = true;
 
         async function loadRecommendations() {
@@ -152,7 +183,7 @@ export default function CatalogClient(props : Data) {
         return () => {
             active = false;
         };
-    }, [props.games]);
+    }, [props.games, userLoggedIn]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -235,90 +266,91 @@ export default function CatalogClient(props : Data) {
                     </h1>
                 </div>
 
-                <section className="mb-8 border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] p-4 shadow-sm sm:p-5">
-                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <h2 className="text-lg font-bold tracking-tight text-[var(--vault-text)]">
-                                Recommended for You
-                            </h2>
-                            <p className="text-sm text-[var(--vault-muted)]">
-                                {recommendationMode === "personalized"
-                                    ? "Based on your ratings, favorites, logs, and genre matches."
-                                    : "Top picks while your profile is still getting enough activity."}
-                            </p>
+                {userLoggedIn ? (
+                    <section className="mb-8 border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] p-4 shadow-sm sm:p-5">
+                        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold tracking-tight text-[var(--vault-text)]">
+                                    Recommended for You
+                                </h2>
+                                <p className="text-sm text-[var(--vault-muted)]">
+                                    {recommendationMode === "personalized"
+                                        ? "Based on your ratings, favorites, logs, and genre matches."
+                                        : "Top picks while your profile is still getting enough activity."}
+                                </p>
+                            </div>
+
                         </div>
 
-                        <span className="w-fit rounded-md border border-[var(--vault-border-strong)] bg-[var(--vault-surface)] px-3 py-1 text-xs font-semibold text-[var(--vault-green)]">
-                            {recommendationMode === "personalized" ? "Personalized" : "Popular picks"}
-                        </span>
-                    </div>
+                        {recommendationsLoading ? (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {Array.from({ length: 3 }).map((_, index) => (
+                                    <div
+                                        key={index}
+                                        className="h-32 animate-pulse rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]"
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {recommendations.map((game) => {
+                                    const genres = getRecommendationGenres(game).slice(0, 2);
 
-                    {recommendationsLoading ? (
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {Array.from({ length: 3 }).map((_, index) => (
-                                <div
-                                    key={index}
-                                    className="h-32 animate-pulse rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]"
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {recommendations.map((game) => {
-                                const genres = getRecommendationGenres(game).slice(0, 2);
+                                    return (
+                                        <Link
+                                            key={game.game_id}
+                                            href={{ pathname: "/Journal", query: { gameId: game.game_id } }}
+                                            aria-label={`Log ${game.title} in your journal`}
+                                            className="grid min-h-32 grid-cols-[5rem_1fr] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] transition hover:-translate-y-0.5 hover:border-[var(--vault-purple)] focus:outline-none focus:ring-2 focus:ring-[var(--vault-purple)] focus:ring-offset-2 focus:ring-offset-[var(--vault-bg)]"
+                                        >
+                                            <div
+                                                className="bg-cover bg-top bg-no-repeat"
+                                                style={{
+                                                    backgroundImage: game.cover_image
+                                                        ? `url(${game.cover_image})`
+                                                        : "linear-gradient(160deg, var(--vault-surface-raised), var(--vault-bg-soft))",
+                                                }}
+                                                aria-hidden="true"
+                                            />
 
-                                return (
-                                    <article
-                                        key={game.game_id}
-                                        className="grid min-h-32 grid-cols-[5rem_1fr] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] transition hover:-translate-y-0.5 hover:border-[var(--vault-purple)]"
-                                    >
-                                        <div
-                                            className="bg-cover bg-center bg-no-repeat"
-                                            style={{
-                                                backgroundImage: game.cover_image
-                                                    ? `url(${game.cover_image})`
-                                                    : "linear-gradient(160deg, var(--vault-surface-raised), var(--vault-bg-soft))",
-                                            }}
-                                            aria-hidden="true"
-                                        />
+                                            <div className="flex min-w-0 flex-col justify-between gap-3 p-3">
+                                                <div className="min-w-0">
+                                                    <div className="mb-1 flex items-center gap-2 text-xs font-bold text-[var(--vault-green)]">
+                                                        <span>{getDisplayRating(game.avg_user_rating, game.external_rating)}</span>
+                                                        {game.score ? (
+                                                            <span className="text-[var(--vault-muted-strong)]">
+                                                                Match {game.score.toFixed(1)}
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
 
-                                        <div className="flex min-w-0 flex-col justify-between gap-3 p-3">
-                                            <div className="min-w-0">
-                                                <div className="mb-1 flex items-center gap-2 text-xs font-bold text-[var(--vault-green)]">
-                                                    <span>{getDisplayRating(game.avg_user_rating, game.external_rating)}</span>
-                                                    {game.score ? (
-                                                        <span className="text-[var(--vault-muted-strong)]">
-                                                            Match {game.score.toFixed(1)}
-                                                        </span>
-                                                    ) : null}
+                                                    <h3 className="line-clamp-2 break-words text-sm font-bold leading-tight text-[var(--vault-text)] [overflow-wrap:anywhere]">
+                                                        {game.title}
+                                                    </h3>
                                                 </div>
 
-                                                <h3 className="line-clamp-2 break-words text-sm font-bold leading-tight text-[var(--vault-text)] [overflow-wrap:anywhere]">
-                                                    {game.title}
-                                                </h3>
+                                                <div className="flex min-h-5 flex-wrap gap-2">
+                                                    {genres.length > 0 ? genres.map((genre) => (
+                                                        <span
+                                                            key={genre}
+                                                            className="rounded-sm bg-[var(--vault-bg-soft)] px-2 py-1 text-xs font-medium text-[var(--vault-muted)]"
+                                                        >
+                                                            {formatGenreLabel(genre)}
+                                                        </span>
+                                                    )) : (
+                                                        <span className="text-xs text-[var(--vault-muted-strong)]">
+                                                            Recommended pick
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-
-                                            <div className="flex min-h-5 flex-wrap gap-2">
-                                                {genres.length > 0 ? genres.map((genre) => (
-                                                    <span
-                                                        key={genre}
-                                                        className="rounded-sm bg-[var(--vault-bg-soft)] px-2 py-1 text-xs font-medium text-[var(--vault-muted)]"
-                                                    >
-                                                        {formatGenre(genre)}
-                                                    </span>
-                                                )) : (
-                                                    <span className="text-xs text-[var(--vault-muted-strong)]">
-                                                        Recommended pick
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </article>
-                                );
-                            })}
-                        </div>
-                    )}
-                </section>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </section>
+                ) : null}
 
                 <div className="mb-7 flex flex-col gap-3 border-b border-[var(--vault-border)] pb-3 lg:flex-row lg:items-center lg:justify-between">
                     <label className="relative block w-full lg:max-w-xl">
@@ -334,15 +366,19 @@ export default function CatalogClient(props : Data) {
                         />
                     </label>
 
-                    <label className="flex h-10 items-center gap-2 rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] px-3 text-sm text-[var(--vault-muted)]">
-                        Sort:
+                    <label className="flex h-10 items-center gap-2 rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] px-3 text-sm font-semibold text-[var(--vault-muted)]">
+                        <span className="whitespace-nowrap">Sort by</span>
                         <select
                             value={query.sort}
                             onChange={(event) => updateQuery({ sort: event.target.value as SortOption })}
-                            className="bg-transparent text-[var(--vault-text)] outline-none"
+                            className="min-w-28 bg-transparent text-sm font-semibold text-[var(--vault-text)] outline-none"
                         >
                             {sortOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
+                                <option
+                                    key={option.value}
+                                    value={option.value}
+                                    className="bg-[var(--vault-surface)] text-[var(--vault-text)]"
+                                >
                                     {option.label}
                                 </option>
                             ))}
@@ -384,7 +420,7 @@ export default function CatalogClient(props : Data) {
                                                 : "text-[var(--vault-muted)] hover:bg-[var(--vault-surface)] hover:text-[var(--vault-text)]"
                                         }`}
                                     >
-                                        {formatGenre(genre.name)}
+                                        {formatGenreLabel(genre.name)}
                                     </button>
                                 );
                             })}
@@ -412,7 +448,7 @@ export default function CatalogClient(props : Data) {
                         <div className="mt-8 flex flex-col items-center justify-between gap-3 sm:flex-row">
                             {games.length > 0 ? (
                                 <span className="text-sm text-[var(--vault-muted-strong)]">
-                                    Page {currentPage} of {totalPages} · {totalCount} games
+                                    Page {currentPage} of {totalPages}
                                 </span>
                             ) : (
                                 <span />
@@ -423,7 +459,7 @@ export default function CatalogClient(props : Data) {
                                     <button
                                         type="button"
                                         onClick={() => goToPage(currentPage - 1)}
-                                        disabled={currentPage === 1}
+                                        disabled={!hydrated || currentPage === 1}
                                         className="rounded-md border border-[var(--vault-border-strong)] bg-[var(--vault-surface)] px-3 py-2 text-sm font-semibold text-[var(--vault-text)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-purple)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         Previous
@@ -434,7 +470,7 @@ export default function CatalogClient(props : Data) {
                                             key={page}
                                             type="button"
                                             onClick={() => goToPage(page)}
-                                            disabled={loading || page === currentPage}
+                                            disabled={!hydrated || loading || page === currentPage}
                                             aria-current={page === currentPage ? "page" : undefined}
                                             className={`h-10 min-w-10 rounded-md border px-3 text-sm font-semibold transition disabled:cursor-not-allowed ${
                                                 page === currentPage
@@ -449,7 +485,7 @@ export default function CatalogClient(props : Data) {
                                     <button
                                         type="button"
                                         onClick={() => goToPage(currentPage + 1)}
-                                        disabled={currentPage === totalPages}
+                                        disabled={!hydrated || currentPage === totalPages}
                                         className="rounded-md border border-[var(--vault-border-strong)] bg-[var(--vault-surface)] px-3 py-2 text-sm font-semibold text-[var(--vault-text)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-purple)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         Next
