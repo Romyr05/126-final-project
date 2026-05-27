@@ -1,4 +1,4 @@
-import { Heart, Plus } from "lucide-react";
+import { Heart } from "lucide-react";
 import type { ProfileFavorite } from "@/lib/types/profile";
 
 type ProfileFavoritesProps = {
@@ -27,7 +27,7 @@ export default function ProfileFavorites({ favorites }: ProfileFavoritesProps) {
                         return (
                             <article
                                 key={favorite.favorite_id}
-                                className="group relative flex h-100 overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)]"
+                                className="group relative flex h-[400px] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)]"
                             >
                                 {game?.cover_image ? (
                                     <div

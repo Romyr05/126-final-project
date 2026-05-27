@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";   
-import { getGames } from "@/lib/api";
+import { getGames, getGenres } from "@/lib/api";
 import CatalogClient from "./pageclient";
 
 export type Game = {
-    game_id : number,
+    game_id : string,
     igdb_id : number,
     title : string,
     description : string | null,
@@ -11,12 +11,18 @@ export type Game = {
     external_rating : number | null,
     avg_user_rating : number | null,
     cover_image : string | null,
+    genres : string[],
     created_at : string,
     updated_at : string,
     slug : string | null
 };
 
-const limit = 30;
+export type Genre = {
+    genre_id : string,
+    name : string,
+};
+
+const limit = 10;
 const offset = 0;
 
 
@@ -26,6 +32,10 @@ type gameOutput = {
     games: Game[],
 };
 
+type genreOutput = {
+    genres: Genre[],
+};
+
 export default async function CatalogPage() {
     /*
     before we render the CatalogClient, we essentially do a server-side
@@ -33,13 +43,18 @@ export default async function CatalogPage() {
     while pageclient.tsx is client-side)
     */
 
-    const res = await getGames<gameOutput>(limit, offset);
+    const [res, genreRes] = await Promise.all([
+        getGames<gameOutput>(limit, offset, { sort: "popularity" }),
+        getGenres<genreOutput>(),
+    ]);
     const allGames = res.games;
 
     return (
         <div>
             <CatalogClient
                 games={allGames}
+                genres={genreRes.genres}
+                initial_count={res.count}
                 init_limit={limit}
                 init_offset={offset}
             />

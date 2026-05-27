@@ -71,8 +71,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       
       //For not to run every edit or what
       if (checking){
-        //The main screen
-        router.replace("/login")
+        window.dispatchEvent(new Event("vault-auth-changed"))
+        router.replace("/")
+        router.refresh()
       }
     } catch (err){
       await sleep(700)

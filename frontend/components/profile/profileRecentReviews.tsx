@@ -1,4 +1,4 @@
-import { History, Plus, Star } from "lucide-react";
+import { History, Star } from "lucide-react";
 import type { ProfileReview } from "@/lib/types/profile";
 
 
@@ -23,7 +23,7 @@ export default function ProfileRecentReviews({ reviews }: ProfileRecentReviewsPr
             <div className="space-y-4">
                 {visibleReviews.length > 0 ? (
                     visibleReviews.map((review) => {
-                        const game = review.game ?? review.game;
+                        const game = review.game;
 
                         return (
                             <article

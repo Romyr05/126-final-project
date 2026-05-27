@@ -2,12 +2,26 @@
 
 import Link from "next/link";
 import { request } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {type AuthUser } from "@/lib/auth";
 
 export default function Header(){
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loaded, setLoaded] = useState(false);  //Checking purposes
+
+    const refreshCurrentUser = useCallback(() => {
+        setLoaded(false);
+        request<AuthUser>("/auth/me")
+            .then((currentUser) => {
+                setUser(currentUser);
+            })
+            .catch(() => {
+                setUser(null);
+            })
+            .finally(() => {
+                setLoaded(true);
+            });
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -29,10 +43,13 @@ export default function Header(){
                 }
             });
 
+        window.addEventListener("vault-auth-changed", refreshCurrentUser);
+
         return () => {
             isMounted = false;
+            window.removeEventListener("vault-auth-changed", refreshCurrentUser);
         };
-    }, []);
+    }, [refreshCurrentUser]);
 
     const profileName = user?.username?.trim() || user?.email?.trim() || "Profile";
     const profileLabel = loaded && !user ? "Login" : profileName;
@@ -54,7 +71,7 @@ return(
             <nav className="flex items-center gap-8 justify-self-center">
                 <Link href = "/catalog" className="hover:!text-[var(--vault-purple)]">Catalog</Link>
                 <Link href = "/Journal" className="hover:!text-[var(--vault-purple)]">Journal</Link>
-                <Link href = "/LandingPage" className="hover:!text-[var(--vault-purple)]">Feed</Link>
+                <Link href = "/landingPage" className="hover:!text-[var(--vault-purple)]">Feed</Link>
             </nav>
             
                 <Link

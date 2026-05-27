@@ -17,8 +17,13 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T>{
   const data = await response.json().catch(() => null)
 
   if (!response.ok) {
-    // with fall back if no
-    throw new Error(data?.detail?.msg ?? `API request failed: ${response.status}`)
+    const detail = data?.detail;
+    const message =
+      typeof detail === "string"
+        ? detail
+        : detail?.msg ?? `API request failed: ${response.status}`;
+
+    throw new Error(message);
   }
 
   return data as T;
@@ -27,9 +32,34 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T>{
 //Requests all games
 export function getGames<T>(
   limit : number = 20,
-  offset : number = 0
+  offset : number = 0,
+  options?: {
+    query?: string;
+    genres?: string[];
+    sort?: string;
+    signal?: AbortSignal;
+  }
 ) {
-  return request<T>(`/games?limit=${limit}&offset=${offset}`);
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  if (options?.query?.trim()) {
+    params.set("q", options.query.trim());
+  }
+
+  if (options?.genres?.length) {
+    params.set("genres", options.genres.join(","));
+  }
+
+  if (options?.sort) {
+    params.set("sort", options.sort);
+  }
+
+  return request<T>(`/games?${params.toString()}`, {
+    signal: options?.signal,
+  });
 }
 
 //Requests by game id
@@ -67,4 +97,8 @@ export function getMyReview<T>(gameId: string) {
 
 export function searchGames<T>(query: string) {
   return request<T>(`/games/search?q=${encodeURIComponent(query)}`)
+}
+
+export function getGenres<T>() {
+  return request<T>("/genres")
 }

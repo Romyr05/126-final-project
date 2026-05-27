@@ -8,7 +8,7 @@ import UserReview from "./UserReview";
 type User = {
   name: string;
   review: string;
-  image: string;
+  image: string | null;
 };
 
 type UserReviewListProps = {

@@ -45,7 +45,9 @@ export function LoginForm({
     try {
       const logged = await login({email, password})
       if (logged){
+        window.dispatchEvent(new Event("vault-auth-changed"))
         router.replace("/")
+        router.refresh()
       }
 
     } catch {

@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr,Field  # these are all just validators 
 
 class LoginRequestSchema(BaseModel):
     email: EmailStr
-    password: str = Field(min_length = 8)
+    password: str
 
 
 class SignupRequestSchema(BaseModel):
@@ -15,5 +15,4 @@ class AuthResponseSchema(BaseModel):
     id: str
     email: str | None = None
     username: str | None = None
-
 
