@@ -1,9 +1,5 @@
 export const dynamic = "force-dynamic";   
-import FilterPanel from "@/components/catalog/FilterPanel";
-import GameCardCatalog from "@/components/catalog/GameCardCatalog";
-import Searchbar from "@/components/catalog/Searchbar";
 import { getGames } from "@/lib/api";
-import { useState } from "react";
 import CatalogClient from "./pageclient";
 
 export type Game = {
@@ -20,6 +16,10 @@ export type Game = {
     slug : string | null
 };
 
+const limit = 40;
+const offset = 99;
+
+
 // Made this since Game[] is alraedy an array and wala . property ang array
 type gameOutput = {
     count: number,
@@ -27,9 +27,14 @@ type gameOutput = {
 };
 
 export default async function CatalogPage() {
+    const fetched = await getGames<gameOutput>(limit, offset);
+    const allGames = fetched.games;
+
     return (
         <div>
-            <CatalogClient/>
+            <CatalogClient
+                games={allGames}
+            />
         </div>
     );
 }

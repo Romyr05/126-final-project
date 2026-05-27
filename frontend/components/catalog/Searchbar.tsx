@@ -21,6 +21,6 @@ export default function Searchbar(data : Data) {
         "
         // when any change is detected in input, use callback to set
         // query and the catalog will automatically update
-        onChange={(e) => data.setSearchQuery("Arena")}
+        onChange={(e) => data.setSearchQuery(e.target.value)}
     />);
 }
