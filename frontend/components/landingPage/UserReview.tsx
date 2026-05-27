@@ -7,19 +7,35 @@ and underneath it displays the user's written review.
 type UserReviewProps = {
   name: string;
   review: string;
-  image: string;
+  image: string | null;
 };
 
 function UserReview({ name, review, image }: UserReviewProps) {
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <div className="flex gap-3 p-4 bg-zinc-900 rounded-xl text-white w-full max-w-md">
       
       {/* User Image */}
-      <img
-        src={image}
-        alt={name}
-        className="w-12 h-12 rounded-full object-cover"
-      />
+      {image ? (
+        <img
+          src={image}
+          alt={name}
+          className="w-12 h-12 rounded-full object-cover"
+        />
+      ) : (
+        <div
+          aria-label={name}
+          className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-zinc-700 text-sm font-semibold text-zinc-100"
+        >
+          {initials}
+        </div>
+      )}
 
       {/* User Info */}
       <div className="flex flex-col">
