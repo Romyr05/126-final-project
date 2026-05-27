@@ -3,27 +3,55 @@ this is a component that shows a game and its image
 this is the "GameCard.tsx"
 */
 
-//create an object
+import { Card, CardFooter } from "@/components/ui/card";
+
 type GameCardProps = {
-    title: string,
-    imageStr: string
+    title: string,  
+    genres: string[],
+    image: string | null
 }
 
-
-//function that takes in an object as a parameter
-function GameCard({ title, imageStr }: GameCardProps) {
-    const img = imageStr;
-    
+function GameCard({ title, genres, image }: GameCardProps) {
     return (
-        <div className = "">
-            <h1>{title}</h1>
-            <img src='/images/dummyGameImg.png' alt='minecraft'></img>
-        </div>
-            
-        
-    );
-    
-}
+        <div className="relative w-64 h-64 flex-shrink-0 overflow-hidden">
+            <Card>
+                {/* Background Image */}
+                {image && (
+                    <img
+                        src={image}
+                        alt={title}
+                        className="absolute inset-0 w-full h-full object-cover rounded-full"
+                    />
+                )}
 
+                {/* Overlay */}
+            <div className="absolute inset-0 bg-black/40" />
+
+                {/* Genres */}
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1 z-10">
+                    {genres.map((genre, index) => (
+                        <span
+                            key={index}
+                            className="text-xs bg-white/20 text-white px-2 py-1 rounded-full backdrop-blur-sm"
+                        >
+                            {genre}
+                        </span>
+                    ))}
+                </div>
+                
+                <CardFooter>
+                    {/* Title */}
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
+                        <h2 className="text-white text-lg font-bold text-center drop-shadow-md">
+                            {title}
+                        </h2>
+                    </div>
+                </CardFooter>
+                
+            </Card>
+
+        </div>
+    );
+}
 
 export default GameCard;
