@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -94,6 +95,13 @@ def clean_rating(value):
     if value is None:
         return None
 
+
+def make_game_slug(title, igdb_id):
+    slug_source = f"{title}-{igdb_id}"
+    slug = re.sub(r"[^a-z0-9]+", "-", slug_source.lower()).strip("-")
+
+    return slug or f"game-{igdb_id}"
+
     try:
         return round(float(value), 2)
     except (TypeError, ValueError):
@@ -139,6 +147,7 @@ def normalize_game_payload(game):
             ) #none if empty
         ),
         "cover_image": get_cover_url(game.get("cover")),
+        "slug": make_game_slug(title, igdb_id),
     }
 
 
