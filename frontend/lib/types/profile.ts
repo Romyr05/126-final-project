@@ -25,7 +25,7 @@ export type ProfileResponse = {
   user: {
     user_id: string;
     username: string;
-    email: string;
+    email: string | null;
   };
   stats: {
     logged: number;
@@ -40,7 +40,7 @@ export type ProfileResponse = {
 export type ProfileSummary = {
   user: {
     username: string;
-    email: string;
+    email: string | null;
   };
   stats: {
     logged: number;
