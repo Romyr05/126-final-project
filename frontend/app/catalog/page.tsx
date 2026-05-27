@@ -16,7 +16,7 @@ export type Game = {
     slug : string | null
 };
 
-const limit = 36;
+const limit = 30;
 const offset = 0;
 
 

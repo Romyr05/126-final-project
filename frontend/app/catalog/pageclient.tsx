@@ -18,16 +18,10 @@ over the job of managing states and dictating the layout/structure
 
 import Searchbar from "@/components/catalog/Searchbar";
 import type { Game } from "./page";
-import FilterPanel from "@/components/catalog/FilterPanel";
 import GameCardCatalog from "@/components/catalog/GameCardCatalog";
 import { useEffect, useState } from "react";
 import { getGames, searchGames } from "@/lib/api";
-
-let searchQuery : string = "";
-let searchedGenres : string[] = [];
-let games : Game[] = [];
-let limit : number;
-let page : number = 0;
+import FilterButton from "@/components/catalog/FilterButton";
 
 type Data = {
     games : Game[],
@@ -46,10 +40,33 @@ type GetGamesRes = {
     games: Game[],
 };
 
+const genres : string[] = [
+    "Action",
+    "Action-Adventure",
+    "Adventure",
+    "RPG",
+    "Simulation",
+    "Strategy",
+    "Shooter",
+    "Sports & Racing",
+    "Puzzle",
+    "Fighting",
+    "Platformer",
+    "Survival Horror",
+    "MMO",
+    "Battle Royale",
+    "Sandbox",
+    "Stealth",
+    "Music & Rhythm",
+    "Party",
+    "Casual"
+]
+
 export default function CatalogClient(data : Data) {
-    limit = data.init_limit;
+    const limit = data.init_limit;
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [searchGenres, setSearchGenres] = useState<string[]>([]);
     const [games, setGames] = useState<Game[]>([]);
     const [page, setPage] = useState(1);
 
@@ -97,9 +114,27 @@ export default function CatalogClient(data : Data) {
             <section className="flex gap-6">
 
                 {/* Sidebar / Filters */}
-                <div className="w-1/3">
+                <div className="w-1/3 flex flex-col gap-5">
                     <div className="rounded-lg border p-4">
-                        <FilterPanel/>
+                        <button className="inline">&lt;=</button>
+                        &nbsp;Page 1 of 10&nbsp;
+                        <button className="inline">=&gt;</button>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                        <h1 className="text-xl font-semibold mb-2">
+                            Filter by Genre
+                        </h1>
+
+                        <div className="flex flex-wrap gap-1.5">
+                            {genres.map((genre : string, i : number) => 
+                                <FilterButton 
+                                    key={i} 
+                                    name={genre}
+                                    searchGenres={searchGenres}
+                                    setSearchGenres={setSearchGenres}
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -109,7 +144,7 @@ export default function CatalogClient(data : Data) {
                         <GameCardCatalog
                             games={games}
                             searchQuery={searchQuery}
-                            includedGenres={searchedGenres}
+                            includedGenres={searchGenres}
                         />
                     </div>
                 </div>
@@ -117,21 +152,4 @@ export default function CatalogClient(data : Data) {
             </section>
         </main>
     );
-}
-
-function setSearchQuery(newQuery : string) {
-    console.log("CHANGED!!");
-    searchQuery = newQuery;
-}
-
-function setSearchedGenres(newSet : string[]) {
-    searchedGenres = newSet;
-}
-
-function setPage(newPage : number) {
-    page = newPage;
-}
-
-function setGames(newGames : Game[]) {
-    games = newGames;
 }
