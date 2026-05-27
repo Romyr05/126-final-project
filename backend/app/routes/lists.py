@@ -5,6 +5,7 @@ from uuid import UUID
 from app.database.supabase_client_backend import supabase_public
 from app.schemas.listSchema import ListCreate, ListItemCreate, ListUpdate
 from app.utils.auth import AuthContext, get_auth_context
+from app.utils.supabase import first_row
 
 
 router = APIRouter(prefix="/lists", tags=["Lists"])
@@ -19,10 +20,7 @@ def _get_list(client, list_id: UUID):
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="List not found")
-
-    return response.data[0]
+    return first_row(response, "List not found", 404)
 
 #find the list owned by that user based on the list_id and if it owns it
 def _get_owned_list(client, list_id: UUID, user_id: str):
@@ -102,7 +100,7 @@ def post_list(list_data: ListCreate, auth: AuthContext = Depends(get_auth_contex
         })
         .execute()
     )
-    return response.data[0]
+    return first_row(response, "Could not create list")
 
 
 @router.post("/{list_id}/games")
@@ -135,7 +133,7 @@ def post_list_game(
         })
         .execute()
     )
-    return response.data[0]
+    return first_row(response, "Could not add game to list")
 
 
 @router.patch("/{list_id}")
@@ -167,7 +165,7 @@ def patch_list(
         .eq("list_id", str(list_id))
         .execute()
     )
-    return response.data[0]
+    return first_row(response, "List not found", 404)
 
 
 @router.delete("/{list_id}/games/{game_id}")
@@ -186,10 +184,9 @@ def delete_list_game(
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="List item not found")
+    deleted_item = first_row(response, "List item not found", 404)
 
-    return {"message": "Game removed from list", "list_item": response.data[0]}
+    return {"message": "Game removed from list", "list_item": deleted_item}
 
 
 @router.delete("/{list_id}")
@@ -204,7 +201,6 @@ def delete_list(list_id: UUID, auth: AuthContext = Depends(get_auth_context)):
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="List not found")
+    deleted_list = first_row(response, "List not found", 404)
 
-    return {"message": "List deleted", "list": response.data[0]}
+    return {"message": "List deleted", "list": deleted_list}

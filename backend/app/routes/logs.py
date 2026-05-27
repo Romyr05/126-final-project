@@ -1,8 +1,9 @@
 # in logs we can read, post ,delete
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from uuid import UUID
 from app.utils.auth import AuthContext, get_auth_context
+from app.utils.supabase import first_row
 from app.schemas.logSchema import LogCreate
 
 
@@ -14,7 +15,7 @@ router = APIRouter(prefix ="/logs", tags = ["Logs"])
 def get_user_log(auth: AuthContext = Depends(get_auth_context)):
     user_id = str(auth.user.id)
     response = auth.supabase.table("game_logs").select("*").eq("user_id", user_id).execute()
-    return response.data
+    return first_row(response, "Game log not found", 404)
 
 @router.get("/status/{status}")
 def get_game_by_status(status: str, auth: AuthContext = Depends(get_auth_context)):
@@ -55,7 +56,7 @@ def post_log_game(log: LogCreate, auth: AuthContext = Depends(get_auth_context))
         }, on_conflict="user_id,game_id")
         .execute()
     )
-    return response.data[0]
+    return first_row(response, "Could not save game log")
 
 
 
@@ -77,10 +78,7 @@ def patch_log_game(
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Game log not found")
-
-    return response.data[0]  # this is one {} from the list
+    return first_row(response, "Game log not found", 404)
 
 
 
@@ -98,7 +96,6 @@ def delete_log_game(game_id: UUID, auth: AuthContext = Depends(get_auth_context)
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Game log not found")
+    deleted_log = first_row(response, "Game log not found", 404)
 
-    return {"message": "Game log deleted", "log": response.data[0]}
+    return {"message": "Game log deleted", "log": deleted_log}

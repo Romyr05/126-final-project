@@ -57,12 +57,29 @@ def login(login_data: LoginRequestSchema, response: Response):  # response used 
 
 @router.post("/signup", response_model=AuthResponseSchema )
 def signup(signup_data: SignupRequestSchema, response: Response):
+    username = signup_data.username.strip()
+
+    existing_username = (
+        supabase_admin.table("users")
+        .select("user_id")
+        .eq("username", username)
+        .limit(1)
+        .execute()
+    )
+
+    if existing_username.data:
+        raise HTTPException(status_code=409, detail="Username already exists")
 
     #same logic as above but here we post it instead of get
     try:
         auth_response = supabase_public.auth.sign_up({
             "email": signup_data.email,
             "password": signup_data.password,
+            "options": {
+                "data": {
+                    "username": username,
+                },
+            },
         })
     except Exception:
         raise HTTPException(status_code=400, detail="Could not create account")
@@ -74,11 +91,19 @@ def signup(signup_data: SignupRequestSchema, response: Response):
         raise HTTPException(status_code=400, detail="Could not create account")
 
     #saving part
-    supabase_admin.table("users").upsert({
-        "user_id": user.id,
-        "username": signup_data.username,
-        "email": signup_data.email,
-    }).execute()
+    try:
+        supabase_admin.table("users").upsert({
+            "user_id": user.id,
+            "username": username,
+            "email": signup_data.email,
+        }).execute()
+    except Exception:
+        try:
+            supabase_admin.auth.admin.delete_user(str(user.id))
+        except Exception:
+            pass
+
+        raise HTTPException(status_code=400, detail="Could not create user profile")
 
     if session:
         set_auth_cookies(
@@ -90,7 +115,7 @@ def signup(signup_data: SignupRequestSchema, response: Response):
     return {
         "id": user.id,
         "email": user.email,
-        "username": signup_data.username,
+        "username": username,
     }
 
 
