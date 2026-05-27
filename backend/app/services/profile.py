@@ -15,14 +15,20 @@ def get_profile_user(auth: AuthContext):
     user_id = user_id_syntax(auth)  #authenticated na already 
 
     response = (
-        auth.supabase.table("users").select("username","email","user_id")
+        auth.supabase.table("users").select("username,user_id")
         .eq("user_id", user_id).limit(1).execute()
     )
 
     if not response.data:
         raise HTTPException(status_code=404, detail="User profile not found")
 
-    return response.data[0]
+    profile = response.data[0]
+
+    return {
+        "user_id": profile["user_id"],
+        "username": profile["username"],
+        "email": auth.user.email,
+    }
 
 
 def get_profile_favorites(auth: AuthContext, limit: int = 4):
@@ -41,15 +47,13 @@ def get_profile_favorites(auth: AuthContext, limit: int = 4):
     
     return [
         {
-            "review_id": row["review_id"],
-            "rating": row["rating"],
-            "review_text": row["review_text"],
-            "date_updated": row["date_updated"],
+            "favorite_id": row["favorite_id"],
+            "created_at": row["created_at"],
             "game": row["games"],
         }
         for row in response.data or []
     ]
-    
+        
     
     
 def get_profile_reviews(auth: AuthContext,limit:int =4):
@@ -114,4 +118,3 @@ def get_profile_stats(auth: AuthContext):
         "completed": len_log,
         "avg_rating": avg_rating,
     }
-
