@@ -5,6 +5,7 @@ from uuid import UUID
 from app.database.supabase_client_backend import supabase_public
 from app.schemas.reviewSchema import ReviewCreate, ReviewUpdate
 from app.utils.auth import AuthContext, get_auth_context
+from app.utils.supabase import first_row
 
 
 router = APIRouter(prefix = "/reviews", tags = ["Reviews"])
@@ -49,10 +50,7 @@ def get_my_review_for_game(game_id: UUID, auth: AuthContext = Depends(get_auth_c
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Review not found")
-
-    return response.data[0]
+    return first_row(response, "Review not found", 404)
 
 # posting
 @router.post("")
@@ -83,7 +81,7 @@ def post_review(review: ReviewCreate, auth: AuthContext = Depends(get_auth_conte
         })
         .execute()
     )
-    return response.data[0]
+    return first_row(response, "Could not create review")
 
 # updating  
 @router.patch("/{game_id}")
@@ -105,10 +103,7 @@ def patch_review(
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Review not found")
-
-    return response.data[0]
+    return first_row(response, "Review not found", 404)
 
 # Deleting
 @router.delete("/{game_id}")
@@ -123,7 +118,6 @@ def delete_review(game_id: UUID, auth: AuthContext = Depends(get_auth_context)):
         .execute()
     )
 
-    if not response.data:
-        raise HTTPException(status_code=404, detail="Review not found")
+    deleted_review = first_row(response, "Review not found", 404)
 
-    return {"message": "Review deleted", "review": response.data[0]}
+    return {"message": "Review deleted", "review": deleted_review}
