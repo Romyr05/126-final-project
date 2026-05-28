@@ -1,8 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { deleteReview, getGame, request, searchGames, updateLog } from "@/lib/api"
+import {
+  addFavorite,
+  deleteReview,
+  getFavorite,
+  getGame,
+  removeFavorite,
+  request,
+  searchGames,
+  updateLog,
+} from "@/lib/api"
 import type { GameLogWithDetails } from "@/types/journal"
+import { Heart } from "lucide-react"
 import Image from "next/image"
 
 type Game = {
@@ -60,6 +70,8 @@ export default function JournalEntryForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [prefillLoading, setPrefillLoading] = useState(false)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
   const isEditMode = Boolean(existingEntry)
 
   useEffect(() => {
@@ -99,6 +111,41 @@ export default function JournalEntryForm({
       active = false
     }
   }, [existingEntry, initialGameId])
+
+  useEffect(() => {
+    if (!selectedGame) {
+      setIsFavorited(false)
+      return
+    }
+
+    const gameId = selectedGame.game_id
+    let active = true
+
+    async function loadFavoriteStatus() {
+      setFavoriteLoading(true)
+
+      try {
+        await getFavorite(gameId)
+        if (active) {
+          setIsFavorited(true)
+        }
+      } catch {
+        if (active) {
+          setIsFavorited(false)
+        }
+      } finally {
+        if (active) {
+          setFavoriteLoading(false)
+        }
+      }
+    }
+
+    loadFavoriteStatus()
+
+    return () => {
+      active = false
+    }
+  }, [selectedGame])
 
   async function handleSearch(value: string) {
     if (isEditMode) {
@@ -172,6 +219,18 @@ export default function JournalEntryForm({
         }
       }
 
+      if (isFavorited) {
+        await addFavorite(selectedGame.game_id)
+      } else {
+        try {
+          await removeFavorite(selectedGame.game_id)
+        } catch (favoriteError) {
+          if (!isNotFoundError(favoriteError)) {
+            throw favoriteError
+          }
+        }
+      }
+
       onSuccess()
       setQuery("")
       setResults([])
@@ -179,6 +238,7 @@ export default function JournalEntryForm({
       setStatus(null)
       setRating(null)
       setReviewText("")
+      setIsFavorited(false)
     } catch {
       setError("Failed to save. Are you logged in?")
     } finally {
@@ -244,7 +304,7 @@ export default function JournalEntryForm({
       </div>
 
       {selectedGame ? (
-        <div className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] p-3">
+        <div className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-3 rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] p-3">
           <div className="relative aspect-[3/4] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]">
             <Image
               src={getCoverImageSrc(selectedGame.cover_image)}
@@ -262,6 +322,25 @@ export default function JournalEntryForm({
               {selectedGame.title}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsFavorited((favorited) => !favorited)}
+            disabled={favoriteLoading}
+            aria-pressed={isFavorited}
+            aria-label={
+              isFavorited ? "Remove from favorites" : "Add to favorites"
+            }
+            title={isFavorited ? "Favorited — shows on your profile" : "Favorite this game"}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[var(--vault-border-strong)] transition hover:border-[var(--vault-purple)] disabled:cursor-wait disabled:opacity-60"
+          >
+            <Heart
+              className={`h-5 w-5 transition ${
+                isFavorited
+                  ? "fill-[var(--vault-purple)] text-[var(--vault-purple)]"
+                  : "text-[var(--vault-muted-strong)]"
+              }`}
+            />
+          </button>
         </div>
       ) : null}
 

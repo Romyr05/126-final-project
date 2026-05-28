@@ -98,10 +98,20 @@ export function getGameBySlug<T>(slug: string) {
 }
 
 // Favorites
+export function getFavorite<T>(gameId: string) {
+  return request<T>(`/favorites/${gameId}`);
+}
+
 export function addFavorite<T>(gameId: string) {
   return request<T>("/favorites", {
     method: "POST",
     body: JSON.stringify({ game_id: gameId }),
+  });
+}
+
+export function removeFavorite<T>(gameId: string) {
+  return request<T>(`/favorites/${gameId}`, {
+    method: "DELETE",
   });
 }
 
