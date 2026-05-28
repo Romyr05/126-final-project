@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Sparkles } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getGames, searchGames } from "@/lib/api";
-import { formatGenreLabel } from "@/lib/formatGenre";
 
 type RecommendationGame = {
     game_id: string;
@@ -36,23 +35,13 @@ function getCoverImageSrc(coverImage: string | null) {
     return coverImage;
 }
 
-function getDisplayRating(userRating: number | null, websiteRating: number | null) {
-    const rating = userRating && userRating > 0
-        ? userRating
-        : websiteRating
-            ? websiteRating / 10
-            : null;
-
-    return rating === null ? "N/A" : rating.toFixed(1);
-}
-
 function shuffleGames(games: RecommendationGame[]) {
     return games
         .slice()
         .sort(() => Math.random() - 0.5);
 }
 
-export default function ProfileRecommendations() {
+export default function RecommendedGames() {
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState<RecommendationGame[]>([]);
     const [selectedGame, setSelectedGame] = useState<RecommendationGame | null>(null);
@@ -128,22 +117,21 @@ export default function ProfileRecommendations() {
 
     return (
         <section className="space-y-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-[var(--vault-purple)]" />
-                    <div>
-                        <h2 className="text-lg font-semibold text-[var(--vault-text)]">
-                            Recommended Games
-                        </h2>
-                        <p className="mt-1 text-sm text-[var(--vault-muted)]">
-                            {selectedGame
-                                ? `Based on ${selectedGame.title}`
-                                : "A fresh random set from the catalog"}
-                        </p>
-                    </div>
-                </div>
+            <div className="mb-5 flex items-center gap-4">
+                <h2 className="shrink-0 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[var(--vault-muted)]">
+                    Recommended Games
+                </h2>
+                <div className="h-px flex-1 bg-[var(--vault-border)]" />
+            </div>
 
-                <label className="relative block w-full lg:max-w-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+                {selectedGame ? (
+                    <p className="text-sm text-[var(--vault-muted)] sm:mr-auto">
+                        Based on {selectedGame.title}
+                    </p>
+                ) : null}
+
+                <label className="relative block w-full sm:max-w-sm">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--vault-muted-strong)]" />
                     <input
                         type="search"
@@ -180,11 +168,11 @@ export default function ProfileRecommendations() {
             </div>
 
             {loading ? (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {Array.from({ length: RECOMMENDATION_LIMIT }).map((_, index) => (
                         <div
                             key={index}
-                            className="h-[340px] animate-pulse rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]"
+                            className="h-64 animate-pulse rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]"
                         />
                     ))}
                 </div>
@@ -193,7 +181,7 @@ export default function ProfileRecommendations() {
                     {error}
                 </p>
             ) : recommendations.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {recommendations.map((game) => (
                         <RecommendationCard key={game.game_id} game={game} />
                     ))}
@@ -208,41 +196,29 @@ export default function ProfileRecommendations() {
 }
 
 function RecommendationCard({ game }: { game: RecommendationGame }) {
-    const href = `/Journal?gameId=${encodeURIComponent(game.game_id)}`;
-    const visibleGenres = game.genres.slice(0, 2);
+    const href = game.slug ? `/catalog/${game.slug}` : "/catalog";
 
     return (
         <Link
             href={href}
-            aria-label={`Log ${game.title} in your journal`}
-            className="group block rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--vault-purple)] focus:ring-offset-2 focus:ring-offset-[var(--vault-bg)]"
+            className="group block focus:outline-none focus:ring-2 focus:ring-[var(--vault-purple)] focus:ring-offset-2 focus:ring-offset-[var(--vault-bg)]"
         >
-            <article className="relative aspect-[3/4] overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] transition-transform group-hover:-translate-y-0.5 group-hover:border-[var(--vault-purple)]">
-                <Image
-                    src={getCoverImageSrc(game.cover_image)}
-                    alt={`${game.title} cover`}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover object-top transition duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[rgb(31_31_34_/_0.98)] via-[rgb(31_31_34_/_0.42)] to-transparent" />
-
-                <div className="absolute inset-x-0 bottom-0 flex h-32 flex-col justify-end gap-2 p-4">
-                    <p className="flex h-5 items-center text-xs font-bold leading-none text-[var(--vault-green)]">
-                        ★ {getDisplayRating(game.avg_user_rating, game.external_rating)}
-                    </p>
-                    <h3 className="h-5 truncate text-sm font-bold leading-5 text-[var(--vault-text)]">
+            <article className="overflow-hidden rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] transition hover:-translate-y-0.5 hover:border-[var(--vault-purple)]">
+                <div className="relative aspect-[3/4] bg-[var(--vault-bg-soft)]">
+                    <Image
+                        src={getCoverImageSrc(game.cover_image)}
+                        alt={`${game.title} cover`}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover object-top transition duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--vault-surface)] to-transparent" />
+                </div>
+                <div className="p-3">
+                    <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-tight text-[var(--vault-text)]">
                         {game.title}
                     </h3>
-                    <div className="flex h-5 min-w-0 gap-2 overflow-hidden">
-                        {visibleGenres.map((genre) => (
-                            <span key={genre} className="shrink truncate text-xs leading-5 text-[var(--vault-muted)]">
-                                {formatGenreLabel(genre)}
-                            </span>
-                        ))}
-                    </div>
                 </div>
-
             </article>
         </Link>
     );

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import RecommendedGames from "@/components/landingPage/RecommendedGames";
 import { getGames, getRecentReviews } from "@/lib/api";
 import type { Game } from "@/app/catalog/page";
 
@@ -145,6 +146,10 @@ export default function LandingPage() {
             No popular games are available yet.
           </p>
         )}
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        <RecommendedGames />
       </section>
 
       <section className="mx-auto max-w-7xl px-6 pb-14 pt-4">

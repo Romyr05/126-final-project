@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import ProfileSummary from "@/components/profile/profileSummary";
 import ProfileFavorites from "@/components/profile/profileFavorites";
-import ProfileRecommendations from "@/components/profile/profileRecommendations";
 import ProfileRecentReviews from "@/components/profile/profileRecentReviews";
 import type { ProfileResponse } from "@/lib/types/profile";
 import { request } from "@/lib/api";
@@ -54,7 +53,6 @@ export default function Page() {
                 {profile && (
                     <>
                         <ProfileSummary user={profile.user} stats={profile.stats} />
-                        <ProfileRecommendations />
                         <ProfileFavorites favorites={profile.favorites} />
                         <ProfileRecentReviews reviews={profile.recent_reviews} />
                     </>
