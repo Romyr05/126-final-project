@@ -36,6 +36,7 @@ export default function GameCard(data : CardData) {
     const rating = getDisplayRating(data.userRating, data.websiteRating);
     const titleSizeClass = getTitleSizeClass(data.title);
     const visibleGenres = data.genres.slice(0, 2);
+    const genreSizeClass = getGenreSizeClass(visibleGenres);
     const coverImage = getCoverImageSrc(data.coverImage);
 
     const card = (
@@ -51,21 +52,21 @@ export default function GameCard(data : CardData) {
                 <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[var(--vault-surface)] to-transparent" />
             </div>
 
-            <div className="flex min-h-28 flex-col justify-end gap-1.5 p-3">
-                <div className="flex items-center gap-1 text-xs font-bold text-[var(--vault-green)]">
+            <div className="grid h-28 grid-rows-[0.875rem_2.5rem_1.25rem] content-end gap-1.5 p-3">
+                <div className="inline-flex w-fit items-center gap-1 whitespace-nowrap text-xs font-bold leading-none text-[var(--vault-green)]">
                     <FontAwesomeIcon icon={faStar} className="size-3" />
                     <span>{rating}</span>
                 </div>
 
-                <h2 className={`line-clamp-2 break-words font-bold leading-tight text-[var(--vault-text)] [overflow-wrap:anywhere] ${titleSizeClass}`}>
+                <h2 className={`line-clamp-2 min-h-0 break-words font-bold leading-tight text-[var(--vault-text)] [overflow-wrap:anywhere] ${titleSizeClass}`}>
                     {data.title}
                 </h2>
 
-                <div className="flex min-h-5 flex-wrap gap-x-2 gap-y-1 overflow-hidden">
+                <div className="flex min-h-5 min-w-0 flex-nowrap gap-2 overflow-hidden">
                     {visibleGenres.map((genre) => (
                         <span
                             key={genre}
-                            className="truncate text-xs font-medium text-[var(--vault-muted)]"
+                            className={`min-w-0 shrink whitespace-nowrap font-medium leading-5 text-[var(--vault-muted)] ${genreSizeClass}`}
                         >
                             {formatGenreLabel(genre)}
                         </span>
@@ -112,4 +113,23 @@ function getTitleSizeClass(title : string) {
     }
 
     return "text-base";
+}
+
+function getGenreSizeClass(genres : string[]) {
+    const labels = genres.map(formatGenreLabel);
+    const totalLength = labels.join(" ").length;
+
+    if (totalLength > 30) {
+        return "text-[0.58rem]";
+    }
+
+    if (totalLength > 24) {
+        return "text-[0.65rem]";
+    }
+
+    if (totalLength > 18) {
+        return "text-[0.7rem]";
+    }
+
+    return "text-xs";
 }

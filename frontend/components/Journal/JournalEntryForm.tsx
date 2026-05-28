@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getGame, request, searchGames } from "@/lib/api"
+import { deleteReview, getGame, request, searchGames, updateLog } from "@/lib/api"
+import type { GameLogWithDetails } from "@/types/journal"
 import Image from "next/image"
 
 type Game = {
@@ -27,23 +28,42 @@ function getCoverImageSrc(coverImage: string | null) {
 
 type Props = {
   initialGameId?: string | null
+  existingEntry?: GameLogWithDetails | null
   onSuccess: () => void
   onCancel?: () => void
 }
 
-export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }: Props) {
-  const [query, setQuery] = useState("")
+function isNotFoundError(error: unknown) {
+  return error instanceof Error && error.message.toLowerCase().includes("not found")
+}
+
+export default function JournalEntryForm({
+  initialGameId,
+  existingEntry,
+  onSuccess,
+  onCancel,
+}: Props) {
+  const [query, setQuery] = useState(existingEntry?.title ?? "")
   const [results, setResults] = useState<Game[]>([])
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
-  const [status, setStatus] = useState<Status | null>(null)
-  const [rating, setRating] = useState<number | null>(null)
-  const [reviewText, setReviewText] = useState("")
+  const [selectedGame, setSelectedGame] = useState<Game | null>(
+    existingEntry
+      ? {
+          game_id: existingEntry.game_id,
+          title: existingEntry.title,
+          cover_image: existingEntry.cover_image,
+        }
+      : null
+  )
+  const [status, setStatus] = useState<Status | null>(existingEntry?.status ?? null)
+  const [rating, setRating] = useState<number | null>(existingEntry?.rating ?? null)
+  const [reviewText, setReviewText] = useState(existingEntry?.review_text ?? "")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [prefillLoading, setPrefillLoading] = useState(false)
+  const isEditMode = Boolean(existingEntry)
 
   useEffect(() => {
-    if (!initialGameId) {
+    if (!initialGameId || existingEntry) {
       return
     }
 
@@ -78,9 +98,13 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
     return () => {
       active = false
     }
-  }, [initialGameId])
+  }, [existingEntry, initialGameId])
 
   async function handleSearch(value: string) {
+    if (isEditMode) {
+      return
+    }
+
     setQuery(value)
     setSelectedGame(null)
 
@@ -101,13 +125,15 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
     setLoading(true)
     setError("")
     try {
-      // log the status
-      await request("/logs", {
-        method: "POST",
-        body: JSON.stringify({ game_id: selectedGame.game_id, status }),
-      })
+      if (isEditMode) {
+        await updateLog(selectedGame.game_id, { status })
+      } else {
+        await request("/logs", {
+          method: "POST",
+          body: JSON.stringify({ game_id: selectedGame.game_id, status }),
+        })
+      }
 
-      // post review if rating provided
       if (rating) {
         const reviewPayload = {
           game_id: selectedGame.game_id,
@@ -136,6 +162,14 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
             throw reviewError
           }
         }
+      } else if (isEditMode && existingEntry?.rating) {
+        try {
+          await deleteReview(selectedGame.game_id)
+        } catch (reviewError) {
+          if (!isNotFoundError(reviewError)) {
+            throw reviewError
+          }
+        }
       }
 
       onSuccess()
@@ -155,9 +189,13 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="text-xl font-bold text-[var(--vault-text)]">Log a Game</h2>
+        <h2 className="text-xl font-bold text-[var(--vault-text)]">
+          {isEditMode ? "Edit Log" : "Log a Game"}
+        </h2>
         <p className="mt-1 text-sm text-[var(--vault-muted)]">
-          Add a game to your journal and leave a rating or review.
+          {isEditMode
+            ? "Update your status, rating, or review for this game."
+            : "Add a game to your journal and leave a rating or review."}
         </p>
       </div>
 
@@ -174,9 +212,10 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
           placeholder="Search for a game..."
           value={selectedGame ? selectedGame.title : query}
           onChange={(e) => handleSearch(e.target.value)}
-          className="h-11 w-full rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] px-4 text-[var(--vault-text)] outline-none transition placeholder:text-[var(--vault-muted-strong)] focus:border-[var(--vault-purple)] focus:ring-1 focus:ring-[var(--vault-purple)]"
+          disabled={isEditMode}
+          className="h-11 w-full rounded-md border border-[var(--vault-border)] bg-[var(--vault-bg-soft)] px-4 text-[var(--vault-text)] outline-none transition placeholder:text-[var(--vault-muted-strong)] focus:border-[var(--vault-purple)] focus:ring-1 focus:ring-[var(--vault-purple)] disabled:cursor-not-allowed disabled:opacity-70"
         />
-        {results.length > 0 && !selectedGame && (
+        {results.length > 0 && !selectedGame && !isEditMode && (
           <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] shadow-[var(--vault-shadow)]">
             {results.map((game) => (
               <button
@@ -248,7 +287,7 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
 
       <div>
         <p className="mb-2 text-sm font-semibold text-[var(--vault-muted)]">Rating (optional)</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               type="button"
@@ -263,6 +302,15 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
               ★
             </button>
           ))}
+          {rating ? (
+            <button
+              type="button"
+              onClick={() => setRating(null)}
+              className="ml-1 rounded-md border border-[var(--vault-border-strong)] px-2 py-1 text-xs font-semibold text-[var(--vault-muted)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-text)]"
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -296,7 +344,7 @@ export default function JournalEntryForm({ initialGameId, onSuccess, onCancel }:
           disabled={!selectedGame || !status || loading}
           className="rounded-md bg-[var(--vault-purple)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading ? "Saving..." : "Log Game"}
+          {loading ? "Saving..." : isEditMode ? "Save Changes" : "Log Game"}
         </button>
       </div>
     </div>

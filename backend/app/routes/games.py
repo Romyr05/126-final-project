@@ -25,7 +25,7 @@ game_genres(genres(name))
 def _execute_games_query(query):
     try:    
         return query.execute()
-    except httpx.ConnectError as exc:
+    except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=503,
             detail="Supabase is not reachable. Start local Supabase with `npx supabase start` or check SUPABASE_URL.",

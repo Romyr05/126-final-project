@@ -22,7 +22,7 @@ export type Genre = {
     name : string,
 };
 
-const limit = 10;
+const limit = 20;
 const offset = 0;
 
 

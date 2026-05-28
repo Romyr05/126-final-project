@@ -133,12 +133,31 @@ export function getLogs<T>() {
   return request<T>("/logs")
 }
 
+export function updateLog<T>(gameId: string, payload: { status: string }) {
+  return request<T>(`/logs/${gameId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ game_id: gameId, status: payload.status }),
+  })
+}
+
+export function deleteLog<T>(gameId: string) {
+  return request<T>(`/logs/${gameId}`, {
+    method: "DELETE",
+  })
+}
+
 export function getMyReview<T>(gameId: string) {
   return request<T>(`/reviews/${gameId}`)
 }
 
 export function getMyReviews<T>() {
   return request<T>("/reviews/me")
+}
+
+export function deleteReview<T>(gameId: string) {
+  return request<T>(`/reviews/${gameId}`, {
+    method: "DELETE",
+  })
 }
 
 export function getRecentReviews<T>(limit: number = 4) {

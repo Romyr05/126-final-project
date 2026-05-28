@@ -2,7 +2,7 @@
 
 import JournalEntryCard from "@/components/Journal/JournalEntryCard"
 import JournalEntryForm from "@/components/Journal/JournalEntryForm"
-import { request } from "@/lib/api"
+import { deleteLog, deleteReview, request } from "@/lib/api"
 import type { AuthUser } from "@/lib/auth"
 import { useJournal } from "@/hooks/useJournal"
 import type { GameLogWithDetails, JournalReviewWithGame } from "@/types/journal"
@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useMemo, useState } from "react"
 
 type StatusFilter = GameLogWithDetails["status"] | "all"
+type FormMode = "create" | "edit"
 
 const visibleLogLimit = 7
 const statusFilters: { label: string; value: StatusFilter }[] = [
@@ -43,6 +44,11 @@ function JournalShell({ initialGameId }: { initialGameId: string | null }) {
   const { entries, reviews, loading, error, refresh } = useJournal(loggedIn)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
   const [formOpen, setFormOpen] = useState(() => Boolean(initialGameId))
+  const [formMode, setFormMode] = useState<FormMode>("create")
+  const [editingEntry, setEditingEntry] = useState<GameLogWithDetails | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<GameLogWithDetails | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
 
   useEffect(() => {
     let active = true
@@ -78,7 +84,67 @@ function JournalShell({ initialGameId }: { initialGameId: string | null }) {
 
   function handleSuccess() {
     refresh()
+    closeForm()
+  }
+
+  function openCreateForm() {
+    setFormMode("create")
+    setEditingEntry(null)
+    setFormOpen(true)
+  }
+
+  function openEditForm(entry: GameLogWithDetails) {
+    setFormMode("edit")
+    setEditingEntry(entry)
+    setFormOpen(true)
+  }
+
+  function closeForm() {
     setFormOpen(false)
+    setEditingEntry(null)
+    setFormMode("create")
+  }
+
+  function openDeleteConfirm(entry: GameLogWithDetails) {
+    setDeleteTarget(entry)
+    setDeleteError("")
+  }
+
+  function closeDeleteConfirm() {
+    if (deleteLoading) {
+      return
+    }
+
+    setDeleteTarget(null)
+    setDeleteError("")
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) {
+      return
+    }
+
+    setDeleteLoading(true)
+    setDeleteError("")
+
+    try {
+      await deleteLog(deleteTarget.game_id)
+
+      try {
+        await deleteReview(deleteTarget.game_id)
+      } catch (reviewError) {
+        if (!isNotFoundError(reviewError)) {
+          throw reviewError
+        }
+      }
+
+      refresh()
+      setDeleteTarget(null)
+    } catch {
+      setDeleteError("Failed to delete this journal entry. Please try again.")
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   if (!authChecked) {
@@ -126,10 +192,15 @@ function JournalShell({ initialGameId }: { initialGameId: string | null }) {
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {visibleEntries.map((entry) => (
-                <JournalEntryCard key={entry.game_id} entry={entry} />
+                <JournalEntryCard
+                  key={entry.game_id}
+                  entry={entry}
+                  onEdit={openEditForm}
+                  onDelete={openDeleteConfirm}
+                />
               ))}
 
-              <AddGameTile onClick={() => setFormOpen(true)} />
+              <AddGameTile onClick={openCreateForm} />
             </section>
 
             {filteredEntries.length === 0 ? (
@@ -150,16 +221,32 @@ function JournalShell({ initialGameId }: { initialGameId: string | null }) {
       </section>
 
       {formOpen ? (
-        <JournalEntryModal onClose={() => setFormOpen(false)}>
+        <JournalEntryModal onClose={closeForm}>
           <JournalEntryForm
-            initialGameId={initialGameId}
+            key={`${formMode}-${editingEntry?.game_id ?? initialGameId ?? "new"}`}
+            initialGameId={formMode === "create" ? initialGameId : null}
+            existingEntry={editingEntry}
             onSuccess={handleSuccess}
-            onCancel={() => setFormOpen(false)}
+            onCancel={closeForm}
           />
         </JournalEntryModal>
       ) : null}
+
+      {deleteTarget ? (
+        <DeleteConfirmModal
+          entry={deleteTarget}
+          error={deleteError}
+          loading={deleteLoading}
+          onCancel={closeDeleteConfirm}
+          onConfirm={handleDeleteConfirm}
+        />
+      ) : null}
     </main>
   )
+}
+
+function isNotFoundError(error: unknown) {
+  return error instanceof Error && error.message.toLowerCase().includes("not found")
 }
 
 function JournalLoginRequired() {
@@ -256,6 +343,96 @@ function JournalEntryModal({
           Log a Game
         </div>
         {children}
+      </section>
+    </div>
+  )
+}
+
+function DeleteConfirmModal({
+  entry,
+  error,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  entry: GameLogWithDetails
+  error: string
+  loading: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onCancel()
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [onCancel])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur-sm"
+      onMouseDown={onCancel}
+      role="presentation"
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="journal-delete-title"
+        aria-describedby="journal-delete-description"
+        className="w-full max-w-md rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)] p-5 shadow-[var(--vault-shadow)]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="journal-delete-title" className="text-lg font-bold text-[var(--vault-text)]">
+              Delete journal entry?
+            </h2>
+            <p
+              id="journal-delete-description"
+              className="mt-2 text-sm leading-6 text-[var(--vault-muted)]"
+            >
+              This will delete your log for {entry.title}, including its rating and
+              review. This action cannot be undone.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--vault-border-strong)] text-[var(--vault-muted)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-text)] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Close delete confirmation"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {error ? <p className="mb-4 text-sm text-[var(--vault-danger)]">{error}</p> : null}
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-md border border-[var(--vault-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--vault-muted)] transition hover:border-[var(--vault-purple)] hover:text-[var(--vault-text)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="rounded-md bg-[var(--vault-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Deleting..." : "Delete"}
+          </button>
+        </div>
       </section>
     </div>
   )

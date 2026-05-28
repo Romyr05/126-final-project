@@ -23,7 +23,7 @@ export default function GameCardCatalog(data : Data) {
     if (data.loading) {
         return (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-                {Array.from({ length: 10 }).map((_, index) => (
+                {Array.from({ length: 20 }).map((_, index) => (
                     <div
                         key={index}
                         className="h-64 animate-pulse rounded-md border border-[var(--vault-border)] bg-[var(--vault-surface)]"

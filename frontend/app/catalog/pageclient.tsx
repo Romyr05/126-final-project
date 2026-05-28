@@ -317,11 +317,6 @@ export default function CatalogClient(props : Data) {
                                                 <div className="min-w-0">
                                                     <div className="mb-1 flex items-center gap-2 text-xs font-bold text-[var(--vault-green)]">
                                                         <span>{getDisplayRating(game.avg_user_rating, game.external_rating)}</span>
-                                                        {game.score ? (
-                                                            <span className="text-[var(--vault-muted-strong)]">
-                                                                Match {game.score.toFixed(1)}
-                                                            </span>
-                                                        ) : null}
                                                     </div>
 
                                                     <h3 className="line-clamp-2 break-words text-sm font-bold leading-tight text-[var(--vault-text)] [overflow-wrap:anywhere]">

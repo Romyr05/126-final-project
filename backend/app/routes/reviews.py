@@ -1,6 +1,7 @@
 #same imports as usual
 
 from fastapi import APIRouter, Depends, HTTPException
+import httpx
 from uuid import UUID
 from app.database.supabase_client_backend import supabase_public
 from app.schemas.reviewSchema import ReviewCreate, ReviewUpdate
@@ -10,15 +11,24 @@ from app.utils.supabase import first_row
 
 router = APIRouter(prefix = "/reviews", tags = ["Reviews"])
 
+
+def _execute_public_review_query(query):
+    try:
+        return query.execute()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase is not reachable. Start local Supabase with `npx supabase start` or check SUPABASE_URL.",
+        ) from exc
+
 #getting
 @router.get("/game/{game_id}")
 def get_review_by_game(game_id: UUID):
-    response = (
+    response = _execute_public_review_query(
         supabase_public.table("reviews")
         .select("*")
         .eq("game_id", str(game_id))
         .order("date_updated", desc=True)
-        .execute()
     )
     return response.data
 
@@ -41,7 +51,7 @@ def get_my_reviews(auth: AuthContext = Depends(get_auth_context)):
 def get_recent_reviews(limit: int = 4):
     safe_limit = min(max(limit, 1), 12)
 
-    response = (
+    response = _execute_public_review_query(
         supabase_public.table("reviews")
         .select(
             """
@@ -55,7 +65,6 @@ def get_recent_reviews(limit: int = 4):
         )
         .order("date_updated", desc=True)
         .limit(safe_limit)
-        .execute()
     )
 
     return [
